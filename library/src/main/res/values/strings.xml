@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="permission_dialog_rationale_message_default">Please allow permissions to proceed.</string>
+    <string name="permission_dialog_settings_message_default">Please grant following permissions from settings to
+        proceed.\n\n%s</string>
+    <string name="permission_dialog_settings_button_default">Settings</string>
+</resources>

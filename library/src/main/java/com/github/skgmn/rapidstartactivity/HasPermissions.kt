@@ -4,43 +4,52 @@ import android.content.Context
 import androidx.core.content.PermissionChecker
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.*
 
-@FlowPreview
+internal val globalPermissionResultSignal = MutableSharedFlow<Any>(
+    extraBufferCapacity = 1,
+    onBufferOverflow = BufferOverflow.DROP_OLDEST
+)
+
+@ExperimentalCoroutinesApi
 fun FragmentActivity.hasPermissions(permissions: Collection<String>): Flow<Boolean> {
     return hasPermissions(
         context = this,
-        permissionHelper = StartActivityHelperUtils.getHelperFragment(supportFragmentManager),
+        helperFragment = StartActivityHelperUtils.getHelperFragment(supportFragmentManager),
         permissions = permissions
     )
 }
 
-@FlowPreview
+@ExperimentalCoroutinesApi
 fun Fragment.hasPermissions(permissions: Collection<String>): Flow<Boolean> {
     return hasPermissions(
         context = requireContext(),
-        permissionHelper = StartActivityHelperUtils.getHelperFragment(childFragmentManager),
+        helperFragment = StartActivityHelperUtils.getHelperFragment(childFragmentManager),
         permissions = permissions
     )
 }
 
-@FlowPreview
+@ExperimentalCoroutinesApi
 private fun hasPermissions(
     context: Context,
-    permissionHelper: PermissionHelper,
+    helperFragment: StartActivityHelperFragment,
     permissions: Collection<String>
 ): Flow<Boolean> {
-    return permissionHelper.getPermissionReloadSignal()
-        .onStart { emit(Unit) }
+    return helperFragment.arePermissionsReloadable()
+        .flatMapLatest { reloadable ->
+            if (reloadable) {
+                globalPermissionResultSignal.onStart { emit(Unit) }
+            } else {
+                emptyFlow()
+            }
+        }
         .map { checkPermissionsGranted(context, permissions) }
         .distinctUntilChanged()
 }
 
-private fun checkPermissionsGranted(context: Context, permissions: Collection<String>): Boolean {
+internal fun checkPermissionsGranted(context: Context, permissions: Collection<String>): Boolean {
     return permissions.all {
         PermissionChecker.checkSelfPermission(context, it) == PermissionChecker.PERMISSION_GRANTED
     }
