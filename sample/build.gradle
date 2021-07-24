@@ -7,7 +7,7 @@ android {
     compileSdkVersion 30
 
     defaultConfig {
-        applicationId "com.github.skgmn.rapidstartactivity"
+        applicationId "com.github.skgmn.rapidstartactivity.sample"
         minSdkVersion 16
         targetSdkVersion 30
         versionCode 1
