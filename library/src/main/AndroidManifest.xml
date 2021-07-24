@@ -2,4 +2,10 @@
 <manifest package="com.github.skgmn.rapidstartactivity"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <application>
+        <activity
+            android:name=".StartActivityHelperActivity"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+    </application>
+
 </manifest>
