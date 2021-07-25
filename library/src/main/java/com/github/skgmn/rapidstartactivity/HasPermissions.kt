@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.core.content.PermissionChecker
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.Lifecycle
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
@@ -37,10 +38,17 @@ private fun hasPermissions(
     helperFragment: StartActivityHelperFragment,
     permissions: Collection<String>
 ): Flow<Boolean> {
-    return helperFragment.arePermissionsReloadable()
-        .flatMapLatest { reloadable ->
-            if (reloadable) {
-                globalPermissionResultSignal.onStart { emit(Unit) }
+    return helperFragment.isStarted()
+        .flatMapLatest { started ->
+            if (started) {
+                val resumedAfterPaused = helperFragment.watchLifecycleEvent()
+                    .dropWhile { it != Lifecycle.Event.ON_PAUSE }
+                    .filter { it == Lifecycle.Event.ON_RESUME }
+                merge(
+                    resumedAfterPaused,
+                    globalPermissionResultSignal,
+                    flowOf(Unit)
+                )
             } else {
                 emptyFlow()
             }

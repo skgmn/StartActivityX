@@ -1,15 +1,14 @@
 package com.github.skgmn.rapidstartactivity
 
-import android.content.Context
 import android.content.Intent
 import androidx.activity.result.ActivityResult
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleObserver
-import androidx.lifecycle.OnLifecycleEvent
+import androidx.lifecycle.*
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.Continuation
@@ -17,30 +16,8 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 internal class StartActivityHelperFragment : Fragment(), RequestPermissionsHelper {
-
-    private val permissionsReloadable = MutableStateFlow(false)
     private val permissionRequests = mutableMapOf<Int, Continuation<Unit>>()
     private val activityLaunches = mutableMapOf<Int, Continuation<ActivityResult>>()
-
-    override fun onStart() {
-        super.onStart()
-        permissionsReloadable.tryEmit(true)
-    }
-
-    override fun onResume() {
-        super.onResume()
-        permissionsReloadable.tryEmit(true)
-    }
-
-    override fun onPause() {
-        super.onPause()
-        permissionsReloadable.tryEmit(false)
-    }
-
-    override fun onStop() {
-        super.onStop()
-        permissionsReloadable.tryEmit(false)
-    }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         activityLaunches.remove(requestCode)?.resume(ActivityResult(resultCode, data))
@@ -55,8 +32,36 @@ internal class StartActivityHelperFragment : Fragment(), RequestPermissionsHelpe
         permissionRequests.remove(requestCode)?.resume(Unit)
     }
 
-    fun arePermissionsReloadable(): Flow<Boolean> {
-        return permissionsReloadable
+    @ExperimentalCoroutinesApi
+    fun isStarted(): Flow<Boolean> {
+        return callbackFlow {
+            send(lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
+            val observer = LifecycleEventObserver { _, _ ->
+                trySend(lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
+            }
+            lifecycle.addObserver(observer)
+            awaitClose {
+                lifecycle.removeObserver(observer)
+            }
+        }
+            .buffer(Channel.Factory.CONFLATED)
+            .flowOn(Dispatchers.Main.immediate)
+            .distinctUntilChanged()
+    }
+
+    @ExperimentalCoroutinesApi
+    fun watchLifecycleEvent(): Flow<Lifecycle.Event> {
+        return callbackFlow {
+            val observer = LifecycleEventObserver { _, event ->
+                trySend(event)
+            }
+            lifecycle.addObserver(observer)
+            awaitClose {
+                lifecycle.removeObserver(observer)
+            }
+        }
+            .buffer(Channel.Factory.UNLIMITED)
+            .flowOn(Dispatchers.Main.immediate)
     }
 
     private suspend fun ensureCreated() {
