@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Sample Camera</string>
+    <string name="permissions_required">Permissions are required</string>
+    <string name="grant_permissions">Grant permissions</string>
+</resources>
