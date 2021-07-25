@@ -9,6 +9,6 @@ import kotlin.coroutines.resume
 
 class PermissionRequest(
     val permissions: Collection<String>,
-    val rationaleDialog: suspend (Context, Collection<String>, Boolean) -> Boolean =
+    val rationaleDialog: suspend (Context, Collection<String>) -> Boolean =
         DefaultRationaleDialogs.general()
 )

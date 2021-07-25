@@ -1,11 +1,11 @@
 package com.github.skgmn.rapidstartactivity
 
 import android.app.Activity
-import android.content.Intent
-import android.net.Uri
-import android.provider.Settings
+import android.content.pm.PackageManager
+import android.content.pm.PermissionInfo
 import androidx.core.app.ActivityCompat
 import androidx.core.content.PermissionChecker
+import androidx.core.content.pm.PermissionInfoCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import kotlinx.coroutines.Dispatchers
@@ -60,15 +60,26 @@ private suspend fun acquirePermissions(
     requestPermissionsHelperSupplier: suspend () -> RequestPermissionsHelper,
     request: PermissionRequest
 ): Boolean = withContext(Dispatchers.Main.immediate) {
-    if (checkPermissionsGranted(activity, request.permissions)) {
+    val storage = PermissionStorage.getInstance(activity)
+    val permissionsGranted = request.permissions.asSequence()
+        .filter {
+            PermissionChecker.checkSelfPermission(activity, it) ==
+                    PermissionChecker.PERMISSION_GRANTED
+        }
+        .toSet()
+    storage.doNotAskAgainPermissions -= permissionsGranted
+
+    if (request.permissions.all { it in permissionsGranted }) {
         return@withContext true
     }
 
     val permissionsShouldShowRationale = request.permissions.asSequence()
         .filter { ActivityCompat.shouldShowRequestPermissionRationale(activity, it) }
         .toCollection(LinkedHashSet())
+    storage.doNotAskAgainPermissions -= permissionsShouldShowRationale
+
     if (permissionsShouldShowRationale.isNotEmpty() &&
-        !request.rationaleDialog(activity, permissionsShouldShowRationale, false)
+        !request.rationaleDialog(activity, permissionsShouldShowRationale)
     ) {
         return@withContext false
     }
@@ -85,23 +96,22 @@ private suspend fun acquirePermissions(
         return@withContext true
     }
 
-    val dontAskAgainPermissions = request.permissions.asSequence()
-        .filter {
-            it !in permissionsShouldShowRationale &&
-                    permissionMap[it] == false &&
-                    !ActivityCompat.shouldShowRequestPermissionRationale(activity, it)
-        }
-        .toCollection(LinkedHashSet())
-    if (dontAskAgainPermissions.isEmpty()) {
-        return@withContext false
-    }
-    if (!request.rationaleDialog(activity, dontAskAgainPermissions, true)) {
-        return@withContext false
+    val pm = activity.packageManager
+    storage.doNotAskAgainPermissions += request.permissions.filter {
+        it !in permissionsShouldShowRationale &&
+                permissionMap[it] == false &&
+                !ActivityCompat.shouldShowRequestPermissionRationale(activity, it) &&
+                isDeniable(pm, it)
     }
 
-    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-    val uri = Uri.fromParts("package", activity.packageName, null)
-    intent.data = uri
-    activity.startActivityForResult(intent)
-    return@withContext checkPermissionsGranted(activity, request.permissions)
+    return@withContext false
+}
+
+private fun isDeniable(pm: PackageManager, permission: String): Boolean {
+    return try {
+        PermissionInfoCompat.getProtection(pm.getPermissionInfo(permission, 0)) !=
+                PermissionInfo.PROTECTION_NORMAL
+    } catch (e: PackageManager.NameNotFoundException) {
+        false
+    }
 }
