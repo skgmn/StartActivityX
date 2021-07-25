@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="permission_dialog_rationale_message_default">Please allow permissions to proceed.</string>
-    <string name="permission_dialog_settings_message_default">Please grant following permissions from settings to
-        proceed.\n\n%s</string>
-    <string name="permission_dialog_settings_button_default">Settings</string>
+    <string name="default_rationale_general_title">Permissions are required</string>
+    <string
+        name="default_rationale_general_message"><![CDATA[<small>This feature requires following permissions to proceed:<br><br></small>%s]]></string>
+    <string
+        name="default_rationale_general_message_do_not_ask_again"><![CDATA[<small>This feature requires following permissions to proceed:<br><br></small>%s<br><br>Open <b>Settings > Permissions</b> and allow permissions.]]></string>
+    <string name="default_rationale_button_not_now">Not now</string>
+    <string name="default_rationale_button_open_settings">Open settings</string>
 </resources>

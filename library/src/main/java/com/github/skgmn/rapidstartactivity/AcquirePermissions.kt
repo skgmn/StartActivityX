@@ -1,7 +1,6 @@
 package com.github.skgmn.rapidstartactivity
 
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
@@ -10,9 +9,6 @@ import androidx.core.content.PermissionChecker
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.toCollection
 import kotlinx.coroutines.withContext
 
 suspend fun Activity.acquirePermissions(permissions: Collection<String>): Boolean {
@@ -72,7 +68,7 @@ private suspend fun acquirePermissions(
         .filter { ActivityCompat.shouldShowRequestPermissionRationale(activity, it) }
         .toCollection(LinkedHashSet())
     if (permissionsShouldShowRationale.isNotEmpty() &&
-        !request.rationaleDialog(activity, permissionsShouldShowRationale)
+        !request.rationaleDialog(activity, permissionsShouldShowRationale, false)
     ) {
         return@withContext false
     }
@@ -99,7 +95,7 @@ private suspend fun acquirePermissions(
     if (dontAskAgainPermissions.isEmpty()) {
         return@withContext false
     }
-    if (!request.goToSettingsDialog(activity, dontAskAgainPermissions)) {
+    if (!request.rationaleDialog(activity, dontAskAgainPermissions, true)) {
         return@withContext false
     }
 
