@@ -5,6 +5,7 @@ import androidx.core.content.PermissionChecker
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
@@ -20,12 +21,20 @@ internal val globalPermissionResultSignal = MutableSharedFlow<Any>(
     onBufferOverflow = BufferOverflow.DROP_OLDEST
 )
 
+fun FragmentActivity.permissionStatus(vararg permissions: String): Flow<PermissionStatus> {
+    return permissionStatus(listOf(*permissions))
+}
+
 fun FragmentActivity.permissionStatus(permissions: Collection<String>): Flow<PermissionStatus> {
     return permissionStatus(
         context = this,
         helperFragment = StartActivityHelperUtils.getHelperFragment(supportFragmentManager),
         permissions = permissions
     )
+}
+
+fun Fragment.permissionStatus(vararg permissions: String): Flow<PermissionStatus> {
+    return permissionStatus(listOf(*permissions))
 }
 
 fun Fragment.permissionStatus(permissions: Collection<String>): Flow<PermissionStatus> {
@@ -59,6 +68,7 @@ private fun permissionStatus(
             }
         }
         .map { permissionStatus(context, permissions) }
+        .flowOn(Dispatchers.Main.immediate)
         .distinctUntilChanged()
 }
 

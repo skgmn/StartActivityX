@@ -11,6 +11,10 @@ import androidx.fragment.app.FragmentActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+suspend fun Activity.acquirePermissions(vararg permissions: String): Boolean {
+    return acquirePermissions(listOf(*permissions))
+}
+
 suspend fun Activity.acquirePermissions(permissions: Collection<String>): Boolean {
     return acquirePermissions(PermissionRequest(permissions))
 }
@@ -27,6 +31,10 @@ suspend fun Activity.acquirePermissions(request: PermissionRequest): Boolean {
     }
 }
 
+suspend fun FragmentActivity.acquirePermissions(vararg permissions: String): Boolean {
+    return acquirePermissions(listOf(*permissions))
+}
+
 suspend fun FragmentActivity.acquirePermissions(permissions: Collection<String>): Boolean {
     return acquirePermissions(PermissionRequest(permissions))
 }
@@ -39,6 +47,10 @@ suspend fun FragmentActivity.acquirePermissions(request: PermissionRequest): Boo
         },
         request = request
     )
+}
+
+suspend fun Fragment.acquirePermissions(vararg permissions: String): Boolean {
+    return acquirePermissions(listOf(*permissions))
 }
 
 suspend fun Fragment.acquirePermissions(permissions: Collection<String>): Boolean {
