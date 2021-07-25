@@ -4,9 +4,11 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.pm.PackageManager
 import android.text.Html
+import androidx.annotation.RawRes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import kotlin.coroutines.resume
 
 object DefaultRationaleDialogs {
@@ -32,6 +34,62 @@ object DefaultRationaleDialogs {
                 val dialog = AlertDialog.Builder(context)
                     .setTitle(title)
                     .setMessage(message)
+                    .setPositiveButton(android.R.string.ok) { _, _ -> cont.resume(true) }
+                    .setNegativeButton(android.R.string.cancel) { _, _ -> cont.resume(false) }
+                    .setOnCancelListener {
+                        cont.resume(false)
+                    }
+                    .setCancelable(true)
+                    .show()
+                cont.invokeOnCancellation {
+                    dialog.dismiss()
+                }
+            }
+        }
+
+    fun detailed(@RawRes rationaleId: Int): suspend (Context, Collection<String>) -> Boolean =
+        { context, permissions ->
+            val jsonString = context.resources.openRawResource(rationaleId).reader().readText()
+            val json = JSONObject(jsonString)
+            val rationales = json.keys().asSequence()
+                .associateBy(
+                    keySelector = { it },
+                    valueTransform = { json.getString(it) }
+                )
+            detailed(rationales)(context, permissions)
+        }
+
+    @Suppress("DEPRECATION")
+    fun detailed(
+        rationales: Map<String, String>
+    ): suspend (Context, Collection<String>) -> Boolean =
+        { context, permissions ->
+            val pm = context.packageManager
+            val title = context.getString(R.string.default_rationale_general_title)
+            val message = permissions.asSequence()
+                .distinct()
+                .groupBy(
+                    keySelector = { getGroupName(pm, it) ?: "" },
+                    valueTransform = { rationales[it] ?: "" }
+                )
+                .filter { it.key.isNotEmpty() }
+                .mapNotNull { entry ->
+                    val groupTitle = pm.getPermissionGroupInfo(entry.key, 0).loadLabel(pm)
+                    val rationaleList = entry.value
+                        .filter { it.isNotEmpty() }
+                        .joinToString("<br>") { "- $it" }
+                    if (rationaleList.isNotEmpty()) {
+                        "<b>$groupTitle</b><br><small>$rationaleList</small>"
+                    } else {
+                        null
+                    }
+                }
+                .joinToString("<br><br>")
+
+            suspendCancellableCoroutine { cont ->
+                val dialog = AlertDialog.Builder(context)
+                    .setTitle(title)
+                    .setMessage(Html.fromHtml(message))
                     .setPositiveButton(android.R.string.ok) { _, _ -> cont.resume(true) }
                     .setNegativeButton(android.R.string.cancel) { _, _ -> cont.resume(false) }
                     .setOnCancelListener {
