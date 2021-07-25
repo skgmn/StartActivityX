@@ -110,8 +110,7 @@ private suspend fun acquirePermissions(
 
     val pm = activity.packageManager
     storage.doNotAskAgainPermissions += request.permissions.filter {
-        it !in permissionsShouldShowRationale &&
-                permissionMap[it] == false &&
+        permissionMap[it] == false &&
                 !ActivityCompat.shouldShowRequestPermissionRationale(activity, it) &&
                 isDeniable(pm, it)
     }
