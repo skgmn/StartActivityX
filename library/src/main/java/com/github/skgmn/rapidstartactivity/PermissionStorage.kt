@@ -47,7 +47,7 @@ internal class PermissionStorage(context: Context) {
 
         fun getInstance(context: Context): PermissionStorage {
             return instance ?: synchronized(this) {
-                instance ?: PermissionStorage(context).also {
+                instance ?: PermissionStorage(context.applicationContext).also {
                     instance = it
                 }
             }
