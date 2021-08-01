@@ -80,7 +80,7 @@ private suspend fun acquirePermissions(
     val storage = PermissionStorage.getInstance(activity)
     val permissionsGranted = request.permissions.asSequence()
             .filter {
-                PermissionChecker.checkSelfPermission(activity, it) ==
+                InternalUtils.checkSelfPermission(activity, it) ==
                         PermissionChecker.PERMISSION_GRANTED
             }
             .toSet()
@@ -106,7 +106,7 @@ private suspend fun acquirePermissions(
             activity.startActivityForResult(intent)
 
             return@withContext permissions.all {
-                PermissionChecker.checkSelfPermission(activity, it) ==
+                InternalUtils.checkSelfPermission(activity, it) ==
                         PermissionChecker.PERMISSION_GRANTED
             }
         }
@@ -124,7 +124,7 @@ private suspend fun acquirePermissions(
     val permissionMap = request.permissions.associateBy(
             keySelector = { it },
             valueTransform = {
-                PermissionChecker.checkSelfPermission(activity, it) ==
+                InternalUtils.checkSelfPermission(activity, it) ==
                         PermissionChecker.PERMISSION_GRANTED
             }
     )

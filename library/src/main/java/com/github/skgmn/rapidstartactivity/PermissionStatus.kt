@@ -5,7 +5,6 @@ import androidx.core.content.PermissionChecker
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
@@ -85,7 +84,7 @@ private fun getPermissionStatus(
     val doNotAskAgainPermissions = storage.doNotAskAgainPermissions
     permissions.forEach {
         val status = when {
-            PermissionChecker.checkSelfPermission(context, it) ==
+            InternalUtils.checkSelfPermission(context, it) ==
                     PermissionChecker.PERMISSION_GRANTED -> {
                 PermissionStatus.GRANTED
             }

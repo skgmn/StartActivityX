@@ -1,8 +1,6 @@
 package com.github.skgmn.rapidstartactivity
 
 import android.app.Application
-import android.content.Context
-import android.content.ContextWrapper
 import androidx.fragment.app.Fragment
 
 internal class FragmentApplicationSupplier(private val fragment: Fragment): ApplicationSupplier {
@@ -18,7 +16,7 @@ internal class FragmentApplicationSupplier(private val fragment: Fragment): Appl
         return fragment.activity?.application
             ?: fragment.context?.applicationContext?.let { ctx ->
                 ctx as? Application
-                    ?: ContextUtils.iterateContext(ctx).firstNotNullOfOrNull { it as? Application }
+                    ?: InternalUtils.iterateContext(ctx).firstNotNullOfOrNull { it as? Application }
             }
     }
 }

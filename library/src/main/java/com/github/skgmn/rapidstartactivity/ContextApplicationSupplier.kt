@@ -15,6 +15,6 @@ internal class ContextApplicationSupplier(private val context: Context): Applica
     private fun tryGetApplication(): Application? {
         val appContext = context.applicationContext
         return appContext as? Application
-            ?: ContextUtils.iterateContext(appContext).firstNotNullOfOrNull { it as? Application }
+            ?: InternalUtils.iterateContext(appContext).firstNotNullOfOrNull { it as? Application }
     }
 }
