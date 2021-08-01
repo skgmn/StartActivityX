@@ -49,7 +49,9 @@ class MainActivity : AppCompatActivity() {
             val permissionRequest = PermissionRequest(
                     permissions = REQUIRED_PERMISSIONS,
                     userIntended = fromUser,
-                    rationaleDialog = DefaultRationaleDialogs.detailed(R.raw.permission_rationales)
+                    rationaleDialog = DefaultPermissionDialogs.detailedRationale(
+                            R.raw.permission_rationales
+                    )
             )
             if (!acquirePermissions(permissionRequest)) {
                 return

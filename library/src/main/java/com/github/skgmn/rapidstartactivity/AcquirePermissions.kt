@@ -1,8 +1,11 @@
 package com.github.skgmn.rapidstartactivity
 
 import android.app.Activity
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.PermissionInfo
+import android.net.Uri
+import android.provider.Settings
 import androidx.core.app.ActivityCompat
 import androidx.core.content.PermissionChecker
 import androidx.core.content.pm.PermissionInfoCompat
@@ -25,7 +28,9 @@ suspend fun Activity.acquirePermissions(request: PermissionRequest): Boolean {
     } else {
         acquirePermissions(
                 activity = this,
-                requestPermissionsHelperSupplier = { StartActivityHelperUtils.launchHelperActivity(this) },
+                requestPermissionsHelperSupplier = {
+                    StartActivityHelperUtils.launchHelperActivity(this)
+                },
                 request = request
         )
     }
@@ -88,7 +93,25 @@ private suspend fun acquirePermissions(
     val permissionsShouldShowRationale = request.permissions.asSequence()
             .filter { ActivityCompat.shouldShowRequestPermissionRationale(activity, it) }
             .toCollection(LinkedHashSet())
-    storage.removeDoNotAskAgainPermissions(permissionsShouldShowRationale)
+    val doNotAskAgainPermissions = storage.removeDoNotAskAgainPermissions(
+            permissionsShouldShowRationale
+    )
+
+    if (request.userIntended && doNotAskAgainPermissions.isNotEmpty()) {
+        val permissions = permissionsShouldShowRationale + doNotAskAgainPermissions
+        if (request.goToSettingsDialog(activity, permissions)) {
+            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+            val uri = Uri.fromParts("package", activity.packageName, null)
+            intent.data = uri
+            activity.startActivityForResult(intent)
+
+            return@withContext permissions.all {
+                PermissionChecker.checkSelfPermission(activity, it) ==
+                        PermissionChecker.PERMISSION_GRANTED
+            }
+        }
+        return@withContext false
+    }
 
     if (!request.userIntended &&
             permissionsShouldShowRationale.isNotEmpty() &&

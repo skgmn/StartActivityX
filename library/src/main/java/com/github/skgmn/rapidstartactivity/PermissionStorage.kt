@@ -24,15 +24,19 @@ internal class PermissionStorage(context: Context) {
             prefs.edit().putStringSet(KEY_DO_NOT_ASK_AGAIN_PERMISSIONS, value).apply()
         }
 
-    fun addDoNotAskAgainPermissions(permissions: Collection<String>) {
-        synchronized(doNotAskAgainPermissionsLock) {
-            doNotAskAgainPermissions = doNotAskAgainPermissions + permissions
+    fun addDoNotAskAgainPermissions(permissions: Collection<String>): Set<String> {
+        return synchronized(doNotAskAgainPermissionsLock) {
+            (doNotAskAgainPermissions + permissions).also {
+                doNotAskAgainPermissions = it
+            }
         }
     }
 
-    fun removeDoNotAskAgainPermissions(permissions: Collection<String>) {
-        synchronized(doNotAskAgainPermissionsLock) {
-            doNotAskAgainPermissions = doNotAskAgainPermissions - permissions
+    fun removeDoNotAskAgainPermissions(permissions: Collection<String>): Set<String> {
+        return synchronized(doNotAskAgainPermissionsLock) {
+            (doNotAskAgainPermissions - permissions).also {
+                doNotAskAgainPermissions = it
+            }
         }
     }
 

@@ -60,7 +60,7 @@
             android:layout_marginTop="8dp"
             android:text="@string/grant_permissions"
             android:textSize="13sp"
-            android:visibility="@{permissionsStatus == PermissionStatus.DENIED ? View.VISIBLE : View.GONE}"
+            android:visibility="@{permissionsStatus.isDenied ? View.VISIBLE : View.GONE}"
             app:layout_constraintBottom_toBottomOf="@id/permissionOverlayBackground"
             app:layout_constraintEnd_toEndOf="@id/permissionOverlayBackground"
             app:layout_constraintStart_toStartOf="@id/permissionOverlayBackground"
