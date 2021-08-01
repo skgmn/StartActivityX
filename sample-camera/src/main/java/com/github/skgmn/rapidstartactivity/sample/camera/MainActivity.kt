@@ -27,31 +27,31 @@ class MainActivity : AppCompatActivity() {
 
         binding.requestPermissionButton.setOnClickListener {
             lifecycleScope.launch {
-                startCamera()
+                startCamera(true)
             }
         }
 
         lifecycleScope.launch {
-            startCamera()
+            startCamera(false)
             permissionStatus(REQUIRED_PERMISSIONS).collect {
                 binding.permissionsStatus = it
             }
         }
     }
 
-    private fun createPermissionRequest() = PermissionRequest(
-            permissions = REQUIRED_PERMISSIONS,
-            rationaleDialog = DefaultRationaleDialogs.detailed(R.raw.permission_rationales)
-    )
-
-    private suspend fun startCamera() {
+    private suspend fun startCamera(fromUser: Boolean) {
         if (startingCamera) {
             return
         }
         startingCamera = true
 
         try {
-            if (!acquirePermissions(createPermissionRequest())) {
+            val permissionRequest = PermissionRequest(
+                    permissions = REQUIRED_PERMISSIONS,
+                    userIntended = fromUser,
+                    rationaleDialog = DefaultRationaleDialogs.detailed(R.raw.permission_rationales)
+            )
+            if (!acquirePermissions(permissionRequest)) {
                 return
             }
 

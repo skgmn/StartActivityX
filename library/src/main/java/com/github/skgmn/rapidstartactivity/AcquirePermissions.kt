@@ -24,9 +24,9 @@ suspend fun Activity.acquirePermissions(request: PermissionRequest): Boolean {
         acquirePermissions(request)
     } else {
         acquirePermissions(
-            activity = this,
-            requestPermissionsHelperSupplier = { StartActivityHelperUtils.launchHelperActivity(this) },
-            request = request
+                activity = this,
+                requestPermissionsHelperSupplier = { StartActivityHelperUtils.launchHelperActivity(this) },
+                request = request
         )
     }
 }
@@ -41,11 +41,11 @@ suspend fun FragmentActivity.acquirePermissions(permissions: Collection<String>)
 
 suspend fun FragmentActivity.acquirePermissions(request: PermissionRequest): Boolean {
     return acquirePermissions(
-        activity = this,
-        requestPermissionsHelperSupplier = {
-            StartActivityHelperUtils.getHelperFragment(supportFragmentManager)
-        },
-        request = request
+            activity = this,
+            requestPermissionsHelperSupplier = {
+                StartActivityHelperUtils.getHelperFragment(supportFragmentManager)
+            },
+            request = request
     )
 }
 
@@ -59,26 +59,26 @@ suspend fun Fragment.acquirePermissions(permissions: Collection<String>): Boolea
 
 suspend fun Fragment.acquirePermissions(request: PermissionRequest): Boolean {
     return acquirePermissions(
-        activity = requireActivity(),
-        requestPermissionsHelperSupplier = {
-            StartActivityHelperUtils.getHelperFragment(childFragmentManager)
-        },
-        request = request
+            activity = requireActivity(),
+            requestPermissionsHelperSupplier = {
+                StartActivityHelperUtils.getHelperFragment(childFragmentManager)
+            },
+            request = request
     )
 }
 
 private suspend fun acquirePermissions(
-    activity: Activity,
-    requestPermissionsHelperSupplier: suspend () -> RequestPermissionsHelper,
-    request: PermissionRequest
+        activity: Activity,
+        requestPermissionsHelperSupplier: suspend () -> RequestPermissionsHelper,
+        request: PermissionRequest
 ): Boolean = withContext(Dispatchers.Main.immediate) {
     val storage = PermissionStorage.getInstance(activity)
     val permissionsGranted = request.permissions.asSequence()
-        .filter {
-            PermissionChecker.checkSelfPermission(activity, it) ==
-                    PermissionChecker.PERMISSION_GRANTED
-        }
-        .toSet()
+            .filter {
+                PermissionChecker.checkSelfPermission(activity, it) ==
+                        PermissionChecker.PERMISSION_GRANTED
+            }
+            .toSet()
     storage.doNotAskAgainPermissions -= permissionsGranted
 
     if (request.permissions.all { it in permissionsGranted }) {
@@ -86,23 +86,24 @@ private suspend fun acquirePermissions(
     }
 
     val permissionsShouldShowRationale = request.permissions.asSequence()
-        .filter { ActivityCompat.shouldShowRequestPermissionRationale(activity, it) }
-        .toCollection(LinkedHashSet())
+            .filter { ActivityCompat.shouldShowRequestPermissionRationale(activity, it) }
+            .toCollection(LinkedHashSet())
     storage.doNotAskAgainPermissions -= permissionsShouldShowRationale
 
-    if (permissionsShouldShowRationale.isNotEmpty() &&
-        !request.rationaleDialog(activity, permissionsShouldShowRationale)
-    ) {
+    if (!request.userIntended &&
+            permissionsShouldShowRationale.isNotEmpty() &&
+            !request.rationaleDialog(activity, permissionsShouldShowRationale)) {
+
         return@withContext false
     }
 
     requestPermissionsHelperSupplier().requestPermissions(request.permissions)
     val permissionMap = request.permissions.associateBy(
-        keySelector = { it },
-        valueTransform = {
-            PermissionChecker.checkSelfPermission(activity, it) ==
-                    PermissionChecker.PERMISSION_GRANTED
-        }
+            keySelector = { it },
+            valueTransform = {
+                PermissionChecker.checkSelfPermission(activity, it) ==
+                        PermissionChecker.PERMISSION_GRANTED
+            }
     )
     if (permissionMap.all { it.value }) {
         return@withContext true
