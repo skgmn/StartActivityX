@@ -41,7 +41,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun createPermissionRequest() = PermissionRequest(
             permissions = REQUIRED_PERMISSIONS,
-            rationaleDialog = DefaultRationaleDialogs.detailed(R.raw.rationales)
+            rationaleDialog = DefaultRationaleDialogs.detailed(R.raw.permission_rationales)
     )
 
     private suspend fun startCamera() {
@@ -52,7 +52,6 @@ class MainActivity : AppCompatActivity() {
 
         try {
             if (!acquirePermissions(createPermissionRequest())) {
-                startingCamera = false
                 return
             }
 
