@@ -15,48 +15,48 @@ import kotlin.random.Random
 
 suspend fun <T : Activity> Context.launchActivity(intent: ExplicitIntent<T>): T {
     return launchActivity(
-        applicationSupplier = ContextApplicationSupplier(this),
-        activityStarter = { startActivity(it) },
-        intent = intent
+            applicationSupplier = ContextApplicationSupplier(this),
+            activityStarter = { startActivity(it) },
+            intent = intent
     )
 }
 
 suspend fun <T : Activity> Activity.launchActivity(
-    intent: ExplicitIntent<T>,
-    overridePendingTransition: OverridePendingTransition? = null
+        intent: ExplicitIntent<T>,
+        overridePendingTransition: OverridePendingTransition? = null
 ): T {
     return launchActivity(
-        applicationSupplier = ActivityApplicationSupplier(this),
-        activityStarter = { intentToStart ->
-            startActivity(intentToStart)
-            overridePendingTransition?.let {
-                overridePendingTransition(it.enterAnim, it.exitAnim)
-            }
-        },
-        intent = intent
+            applicationSupplier = ActivityApplicationSupplier(this),
+            activityStarter = { intentToStart ->
+                startActivity(intentToStart)
+                overridePendingTransition?.let {
+                    overridePendingTransition(it.enterAnim, it.exitAnim)
+                }
+            },
+            intent = intent
     )
 }
 
 suspend fun <T : Activity> Fragment.launchActivity(
-    intent: ExplicitIntent<T>,
-    overridePendingTransition: OverridePendingTransition? = null
+        intent: ExplicitIntent<T>,
+        overridePendingTransition: OverridePendingTransition? = null
 ): T {
     return launchActivity(
-        applicationSupplier = FragmentApplicationSupplier(this),
-        activityStarter = { intentToStart ->
-            startActivity(intentToStart)
-            overridePendingTransition?.let {
-                activity?.overridePendingTransition(it.enterAnim, it.exitAnim)
-            }
-        },
-        intent = intent
+            applicationSupplier = FragmentApplicationSupplier(this),
+            activityStarter = { intentToStart ->
+                startActivity(intentToStart)
+                overridePendingTransition?.let {
+                    activity?.overridePendingTransition(it.enterAnim, it.exitAnim)
+                }
+            },
+            intent = intent
     )
 }
 
 private suspend fun <T : Activity> launchActivity(
-    applicationSupplier: ApplicationSupplier,
-    activityStarter: (Intent) -> Unit,
-    intent: ExplicitIntent<T>
+        applicationSupplier: ApplicationSupplier,
+        activityStarter: (Intent) -> Unit,
+        intent: ExplicitIntent<T>
 ): T = withContext(Dispatchers.Main.immediate) {
     suspendCancellableCoroutine { cont ->
         val randomKey = UUID.randomUUID().toString()
@@ -66,16 +66,20 @@ private suspend fun <T : Activity> launchActivity(
         actualIntent.putExtra(randomKey, randomValue)
 
         val app = applicationSupplier.getApplication()
-            ?: throw IllegalStateException("Cannot get application instance")
+                ?: throw IllegalStateException("Cannot get application instance")
 
         val callback = object : Application.ActivityLifecycleCallbacks {
             @Suppress("UNCHECKED_CAST")
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
                 val isExpectedActivity =
-                    activity.intent?.getLongExtra(randomKey, 0) == randomValue
+                        activity.intent?.getLongExtra(randomKey, 0) == randomValue
                 if (isExpectedActivity) {
                     app.unregisterActivityLifecycleCallbacks(this)
-                    cont.resume(activity as T)
+                    if (!cont.isCancelled) {
+                        cont.resume(activity as T)
+                    } else {
+                        activity.finish()
+                    }
                 }
             }
 
