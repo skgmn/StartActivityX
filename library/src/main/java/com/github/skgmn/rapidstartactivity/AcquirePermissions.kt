@@ -14,15 +14,15 @@ import androidx.fragment.app.FragmentActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-suspend fun Activity.acquirePermissions(vararg permissions: String): Boolean {
+suspend fun Activity.acquirePermissions(vararg permissions: String): AcquirePermissionsResult {
     return acquirePermissions(listOf(*permissions))
 }
 
-suspend fun Activity.acquirePermissions(permissions: Collection<String>): Boolean {
+suspend fun Activity.acquirePermissions(permissions: Collection<String>): AcquirePermissionsResult {
     return acquirePermissions(PermissionRequest(permissions))
 }
 
-suspend fun Activity.acquirePermissions(request: PermissionRequest): Boolean {
+suspend fun Activity.acquirePermissions(request: PermissionRequest): AcquirePermissionsResult {
     return if (this is FragmentActivity) {
         acquirePermissions(request)
     } else {
@@ -36,15 +36,21 @@ suspend fun Activity.acquirePermissions(request: PermissionRequest): Boolean {
     }
 }
 
-suspend fun FragmentActivity.acquirePermissions(vararg permissions: String): Boolean {
+suspend fun FragmentActivity.acquirePermissions(
+        vararg permissions: String
+): AcquirePermissionsResult {
     return acquirePermissions(listOf(*permissions))
 }
 
-suspend fun FragmentActivity.acquirePermissions(permissions: Collection<String>): Boolean {
+suspend fun FragmentActivity.acquirePermissions(
+        permissions: Collection<String>
+): AcquirePermissionsResult {
     return acquirePermissions(PermissionRequest(permissions))
 }
 
-suspend fun FragmentActivity.acquirePermissions(request: PermissionRequest): Boolean {
+suspend fun FragmentActivity.acquirePermissions(
+        request: PermissionRequest
+): AcquirePermissionsResult {
     return acquirePermissions(
             activity = this,
             requestPermissionsHelperSupplier = {
@@ -54,15 +60,15 @@ suspend fun FragmentActivity.acquirePermissions(request: PermissionRequest): Boo
     )
 }
 
-suspend fun Fragment.acquirePermissions(vararg permissions: String): Boolean {
+suspend fun Fragment.acquirePermissions(vararg permissions: String): AcquirePermissionsResult {
     return acquirePermissions(listOf(*permissions))
 }
 
-suspend fun Fragment.acquirePermissions(permissions: Collection<String>): Boolean {
+suspend fun Fragment.acquirePermissions(permissions: Collection<String>): AcquirePermissionsResult {
     return acquirePermissions(PermissionRequest(permissions))
 }
 
-suspend fun Fragment.acquirePermissions(request: PermissionRequest): Boolean {
+suspend fun Fragment.acquirePermissions(request: PermissionRequest): AcquirePermissionsResult {
     return acquirePermissions(
             activity = requireActivity(),
             requestPermissionsHelperSupplier = {
@@ -76,7 +82,7 @@ private suspend fun acquirePermissions(
         activity: Activity,
         requestPermissionsHelperSupplier: suspend () -> RequestPermissionsHelper,
         request: PermissionRequest
-): Boolean = withContext(Dispatchers.Main.immediate) {
+): AcquirePermissionsResult = withContext(Dispatchers.Main.immediate) {
     val storage = PermissionStorage.getInstance(activity)
     val permissionsGranted = request.permissions.asSequence()
             .filter {
@@ -87,7 +93,7 @@ private suspend fun acquirePermissions(
     storage.removeDoNotAskAgainPermissions(permissionsGranted)
 
     if (request.permissions.all { it in permissionsGranted }) {
-        return@withContext true
+        return@withContext AcquirePermissionsResult.ALREADY_GRANTED
     }
 
     val permissionsShouldShowRationale = request.permissions.asSequence()
@@ -105,19 +111,24 @@ private suspend fun acquirePermissions(
             intent.data = uri
             activity.startActivityForResult(intent)
 
-            return@withContext permissions.all {
+            val allGranted = permissions.all {
                 InternalUtils.checkSelfPermission(activity, it) ==
                         PermissionChecker.PERMISSION_GRANTED
             }
+            return@withContext if (allGranted) {
+                AcquirePermissionsResult.JUST_GRANTED
+            } else {
+                AcquirePermissionsResult.DENIED
+            }
         }
-        return@withContext false
+        return@withContext AcquirePermissionsResult.DENIED
     }
 
     if (!request.userIntended &&
             permissionsShouldShowRationale.isNotEmpty() &&
             !request.rationaleDialog(activity, permissionsShouldShowRationale)) {
 
-        return@withContext false
+        return@withContext AcquirePermissionsResult.DENIED
     }
 
     requestPermissionsHelperSupplier().requestPermissions(request.permissions)
@@ -129,7 +140,7 @@ private suspend fun acquirePermissions(
             }
     )
     if (permissionMap.all { it.value }) {
-        return@withContext true
+        return@withContext AcquirePermissionsResult.JUST_GRANTED
     }
 
     val pm = activity.packageManager
@@ -139,7 +150,7 @@ private suspend fun acquirePermissions(
                 isDeniable(pm, it)
     })
 
-    return@withContext false
+    return@withContext AcquirePermissionsResult.DENIED
 }
 
 private fun isDeniable(pm: PackageManager, permission: String): Boolean {

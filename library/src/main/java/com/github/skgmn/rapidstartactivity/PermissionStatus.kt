@@ -14,10 +14,10 @@ enum class PermissionStatus {
     DENIED,
     DO_NOT_ASK_AGAIN;
 
-    val isGranted: Boolean
+    val granted: Boolean
         get() = this === GRANTED
 
-    val isDenied: Boolean
+    val denied: Boolean
         get() = this === DENIED || this === DO_NOT_ASK_AGAIN
 }
 

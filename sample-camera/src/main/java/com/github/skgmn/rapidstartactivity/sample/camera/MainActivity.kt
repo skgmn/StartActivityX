@@ -17,6 +17,7 @@ import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.lifecycleScope
 import com.github.skgmn.rapidstartactivity.*
 import com.github.skgmn.rapidstartactivity.sample.camera.databinding.ActivityMainBinding
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import java.util.*
@@ -63,7 +64,7 @@ class MainActivity : AppCompatActivity() {
 
         try {
             val permissionRequest = PermissionRequest(listOf(Manifest.permission.CAMERA), fromUser)
-            if (!acquirePermissions(permissionRequest)) {
+            if (acquirePermissions(permissionRequest).denied) {
                 return
             }
 
@@ -101,9 +102,17 @@ class MainActivity : AppCompatActivity() {
     private suspend fun takePhoto() {
         val imageCapture = imageCapture ?: return
 
-        if (!acquirePermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+        val permissionResult = acquirePermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        if (permissionResult.denied) {
             Toast.makeText(this, R.string.no_permissions, Toast.LENGTH_SHORT).show()
             return
+        }
+
+        if (permissionResult == AcquirePermissionsResult.JUST_GRANTED) {
+            // I don't know why but calling ImageCapture.takePicture() right after permissions are
+            // granted causes a crash.
+            // So just delay some times to avoid it.
+            delay(500)
         }
 
         val outputOptions = ImageCapture.OutputFileOptions
