@@ -13,7 +13,13 @@ import kotlinx.coroutines.flow.*
 enum class PermissionStatus {
     GRANTED,
     DENIED,
-    DO_NOT_ASK_AGAIN
+    DO_NOT_ASK_AGAIN;
+
+    val isGranted: Boolean
+        get() = this === GRANTED
+
+    val isDenied: Boolean
+        get() = this === DENIED || this === DO_NOT_ASK_AGAIN
 }
 
 internal val globalPermissionResultSignal = MutableSharedFlow<Any>(
