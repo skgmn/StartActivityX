@@ -12,16 +12,29 @@ import kotlinx.coroutines.flow.callbackFlow
 internal class PermissionStorage(context: Context) {
     private val prefs by lazy {
         context.getSharedPreferences(
-            "com.github.skgmn.rapidstartactivity.ADDITIONAL_PERMISSION_DATA",
-            Context.MODE_PRIVATE
+                "com.github.skgmn.rapidstartactivity.ADDITIONAL_PERMISSION_DATA",
+                Context.MODE_PRIVATE
         )
     }
+    private val doNotAskAgainPermissionsLock = Any()
 
     var doNotAskAgainPermissions: Set<String>
         get() = prefs.getStringSet(KEY_DO_NOT_ASK_AGAIN_PERMISSIONS, emptySet()) ?: emptySet()
-        set(value) {
+        private set(value) {
             prefs.edit().putStringSet(KEY_DO_NOT_ASK_AGAIN_PERMISSIONS, value).apply()
         }
+
+    fun addDoNotAskAgainPermissions(permissions: Collection<String>) {
+        synchronized(doNotAskAgainPermissionsLock) {
+            doNotAskAgainPermissions = doNotAskAgainPermissions + permissions
+        }
+    }
+
+    fun removeDoNotAskAgainPermissions(permissions: Collection<String>) {
+        synchronized(doNotAskAgainPermissionsLock) {
+            doNotAskAgainPermissions = doNotAskAgainPermissions - permissions
+        }
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     fun doNotAskAgainPermissionsChange(): Flow<*> {
@@ -36,7 +49,7 @@ internal class PermissionStorage(context: Context) {
                 prefs.unregisterOnSharedPreferenceChangeListener(listener)
             }
         }
-            .buffer(Channel.CONFLATED)
+                .buffer(Channel.CONFLATED)
     }
 
     companion object {

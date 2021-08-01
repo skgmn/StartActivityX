@@ -79,7 +79,7 @@ private suspend fun acquirePermissions(
                         PermissionChecker.PERMISSION_GRANTED
             }
             .toSet()
-    storage.doNotAskAgainPermissions -= permissionsGranted
+    storage.removeDoNotAskAgainPermissions(permissionsGranted)
 
     if (request.permissions.all { it in permissionsGranted }) {
         return@withContext true
@@ -88,7 +88,7 @@ private suspend fun acquirePermissions(
     val permissionsShouldShowRationale = request.permissions.asSequence()
             .filter { ActivityCompat.shouldShowRequestPermissionRationale(activity, it) }
             .toCollection(LinkedHashSet())
-    storage.doNotAskAgainPermissions -= permissionsShouldShowRationale
+    storage.removeDoNotAskAgainPermissions(permissionsShouldShowRationale)
 
     if (!request.userIntended &&
             permissionsShouldShowRationale.isNotEmpty() &&
@@ -110,11 +110,11 @@ private suspend fun acquirePermissions(
     }
 
     val pm = activity.packageManager
-    storage.doNotAskAgainPermissions += request.permissions.filter {
+    storage.addDoNotAskAgainPermissions(request.permissions.filter {
         permissionMap[it] == false &&
                 !ActivityCompat.shouldShowRequestPermissionRationale(activity, it) &&
                 isDeniable(pm, it)
-    }
+    })
 
     return@withContext false
 }

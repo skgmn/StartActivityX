@@ -23,8 +23,8 @@ enum class PermissionStatus {
 }
 
 internal val globalPermissionResultSignal = MutableSharedFlow<Any>(
-    extraBufferCapacity = 1,
-    onBufferOverflow = BufferOverflow.DROP_OLDEST
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
 )
 
 fun FragmentActivity.permissionStatus(vararg permissions: String): Flow<PermissionStatus> {
@@ -33,9 +33,9 @@ fun FragmentActivity.permissionStatus(vararg permissions: String): Flow<Permissi
 
 fun FragmentActivity.permissionStatus(permissions: Collection<String>): Flow<PermissionStatus> {
     return permissionStatus(
-        context = this,
-        helperFragment = StartActivityHelperUtils.getHelperFragment(supportFragmentManager),
-        permissions = permissions
+            context = this,
+            helperFragment = StartActivityHelperUtils.getHelperFragment(supportFragmentManager),
+            permissions = permissions
     )
 }
 
@@ -45,42 +45,41 @@ fun Fragment.permissionStatus(vararg permissions: String): Flow<PermissionStatus
 
 fun Fragment.permissionStatus(permissions: Collection<String>): Flow<PermissionStatus> {
     return permissionStatus(
-        context = requireContext(),
-        helperFragment = StartActivityHelperUtils.getHelperFragment(childFragmentManager),
-        permissions = permissions
+            context = requireContext(),
+            helperFragment = StartActivityHelperUtils.getHelperFragment(childFragmentManager),
+            permissions = permissions
     )
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
 private fun permissionStatus(
-    context: Context,
-    helperFragment: StartActivityHelperFragment,
-    permissions: Collection<String>
+        context: Context,
+        helperFragment: StartActivityHelperFragment,
+        permissions: Collection<String>
 ): Flow<PermissionStatus> {
     return helperFragment.isStarted()
-        .flatMapLatest { started ->
-            if (started) {
-                val resumedAfterPaused = helperFragment.watchLifecycleEvent()
-                    .dropWhile { it != Lifecycle.Event.ON_PAUSE }
-                    .filter { it == Lifecycle.Event.ON_RESUME }
-                merge(
-                    resumedAfterPaused,
-                    globalPermissionResultSignal,
-                    PermissionStorage.getInstance(context).doNotAskAgainPermissionsChange(),
-                    flowOf(Unit)
-                )
-            } else {
-                emptyFlow()
+            .flatMapLatest { started ->
+                if (started) {
+                    val resumedAfterPaused = helperFragment.watchLifecycleEvent()
+                            .dropWhile { it != Lifecycle.Event.ON_PAUSE }
+                            .filter { it == Lifecycle.Event.ON_RESUME }
+                    merge(
+                            resumedAfterPaused,
+                            globalPermissionResultSignal,
+                            PermissionStorage.getInstance(context).doNotAskAgainPermissionsChange(),
+                            flowOf(Unit)
+                    )
+                } else {
+                    emptyFlow()
+                }
             }
-        }
-        .map { permissionStatus(context, permissions) }
-        .flowOn(Dispatchers.Main.immediate)
-        .distinctUntilChanged()
+            .map { getPermissionStatus(context, permissions) }
+            .distinctUntilChanged()
 }
 
-private fun permissionStatus(
-    context: Context,
-    permissions: Collection<String>
+private fun getPermissionStatus(
+        context: Context,
+        permissions: Collection<String>
 ): PermissionStatus {
     val storage = PermissionStorage.getInstance(context)
     val doNotAskAgainPermissions = storage.doNotAskAgainPermissions
