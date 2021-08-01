@@ -1,9 +1,15 @@
 package com.github.skgmn.rapidstartactivity.sample.camera
 
+import android.Manifest
+import android.content.ContentValues
 import android.os.Bundle
+import android.provider.MediaStore
 import android.util.Log
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
@@ -13,11 +19,15 @@ import com.github.skgmn.rapidstartactivity.*
 import com.github.skgmn.rapidstartactivity.sample.camera.databinding.ActivityMainBinding
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import java.util.*
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 class MainActivity : AppCompatActivity() {
     private var startingCamera = false
+
+    private var imageCapture: ImageCapture? = null
 
     private lateinit var binding: ActivityMainBinding
 
@@ -31,9 +41,15 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        binding.takePhotoButton.setOnClickListener {
+            lifecycleScope.launch {
+                takePhoto()
+            }
+        }
+
         lifecycleScope.launch {
             startCamera(false)
-            permissionStatus(REQUIRED_PERMISSIONS).collect {
+            permissionStatus(Manifest.permission.CAMERA).collect {
                 binding.permissionsStatus = it
             }
         }
@@ -46,13 +62,7 @@ class MainActivity : AppCompatActivity() {
         startingCamera = true
 
         try {
-            val permissionRequest = PermissionRequest(
-                    permissions = REQUIRED_PERMISSIONS,
-                    userIntended = fromUser,
-                    rationaleDialog = DefaultPermissionDialogs.detailedRationale(
-                            R.raw.permission_rationales
-                    )
-            )
+            val permissionRequest = PermissionRequest(listOf(Manifest.permission.CAMERA), fromUser)
             if (!acquirePermissions(permissionRequest)) {
                 return
             }
@@ -60,12 +70,17 @@ class MainActivity : AppCompatActivity() {
             val cameraProvider = getCameraProvider()
 
             val preview = Preview.Builder().build()
+            val imageCapture = ImageCapture.Builder().build().also {
+                imageCapture = it
+            }
+
             preview.setSurfaceProvider(binding.cameraPreview.surfaceProvider)
 
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
             try {
                 cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(this@MainActivity, cameraSelector, preview)
+                cameraProvider.bindToLifecycle(
+                        this@MainActivity, cameraSelector, preview, imageCapture)
             } catch (e: Exception) {
                 Log.e(TAG, "Use case binding failed", e)
             }
@@ -83,11 +98,48 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private suspend fun takePhoto() {
+        val imageCapture = imageCapture ?: return
+
+        if (!acquirePermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+            Toast.makeText(this, R.string.no_permissions, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val outputOptions = ImageCapture.OutputFileOptions
+                .Builder(
+                        contentResolver,
+                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                        ContentValues()
+                )
+                .build()
+
+        imageCapture.takePicture(outputOptions)
+        Toast.makeText(this, R.string.photo_saved, Toast.LENGTH_SHORT).show()
+    }
+
+    private suspend fun ImageCapture.takePicture(
+            outputOptions: ImageCapture.OutputFileOptions
+    ): ImageCapture.OutputFileResults {
+        return suspendCoroutine { cont ->
+            val callback = object : ImageCapture.OnImageSavedCallback {
+                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                    cont.resume(outputFileResults)
+                }
+
+                override fun onError(exception: ImageCaptureException) {
+                    cont.resumeWithException(exception)
+                }
+            }
+            takePicture(
+                    outputOptions,
+                    ContextCompat.getMainExecutor(this@MainActivity),
+                    callback
+            )
+        }
+    }
+
     companion object {
         private val TAG = MainActivity::class.java.simpleName
-
-        private val REQUIRED_PERMISSIONS = listOf(
-                android.Manifest.permission.CAMERA
-        )
     }
 }
