@@ -12,12 +12,17 @@ import androidx.lifecycle.viewModelScope
 import com.github.skgmn.cameraxx.takePicture
 import com.github.skgmn.viewmodelevent.publicEvent
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
+    private val imageCaptureUseCaseFlow = MutableStateFlow(newImageCapture())
+
     val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
     val previewUseCase = Preview.Builder().build()
-    val imageCaptureUseCase = ImageCapture.Builder().build()
+    val imageCaptureUseCase =
+        imageCaptureUseCaseFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), null)
 
     val cameraPermissionsGranted = MutableStateFlow(false)
 
@@ -41,8 +46,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 ContentValues()
             ).build()
 
-            val result = imageCaptureUseCase.takePicture(outputOptions)
+            val result = imageCaptureUseCaseFlow.value.takePicture(outputOptions)
             showTakenPhotoEvent.post(result.savedUri ?: Uri.EMPTY)
         }
     }
+
+    fun replaceImageCapture() {
+        imageCaptureUseCaseFlow.value = newImageCapture()
+    }
+
+    private fun newImageCapture() = ImageCapture.Builder().build()
 }

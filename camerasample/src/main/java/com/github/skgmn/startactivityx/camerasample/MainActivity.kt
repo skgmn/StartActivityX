@@ -4,12 +4,15 @@ import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.whenStarted
+import com.github.skgmn.startactivityx.AcquirePermissionsResult
 import com.github.skgmn.startactivityx.PermissionRequest
 import com.github.skgmn.startactivityx.acquirePermissions
 import com.github.skgmn.startactivityx.camerasample.databinding.ActivityMainBinding
@@ -58,8 +61,17 @@ class MainActivity : AppCompatActivity() {
             lifecycleScope.launch {
                 val permissionRequest =
                     PermissionRequest(listOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), true)
-                if (acquirePermissions(permissionRequest).granted) {
-                    viewModel.takePhoto()
+                val permissionResult = acquirePermissions(permissionRequest)
+                if (permissionResult.granted) {
+                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P &&
+                        permissionResult == AcquirePermissionsResult.JUST_GRANTED
+                    ) {
+                        viewModel.replaceImageCapture()
+                        binding.executePendingBindings()
+                    }
+                    whenStarted {
+                        viewModel.takePhoto()
+                    }
                 } else {
                     Toast.makeText(this@MainActivity, R.string.no_permissions, Toast.LENGTH_SHORT)
                         .show()
