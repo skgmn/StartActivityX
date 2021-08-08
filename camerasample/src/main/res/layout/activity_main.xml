@@ -9,8 +9,12 @@
         <import type="android.view.View" />
 
         <variable
-            name="permissionsStatus"
-            type="PermissionStatus" />
+            name="owner"
+            type="androidx.lifecycle.LifecycleOwner" />
+
+        <variable
+            name="viewModel"
+            type="com.github.skgmn.startactivityx.camerasample.MainViewModel" />
 
     </data>
 
@@ -22,18 +26,23 @@
             android:id="@+id/cameraPreview"
             android:layout_width="0dp"
             android:layout_height="0dp"
+            app:cameraSelector="@{viewModel.cameraSelector}"
+            app:imageCaptureUseCase="@{viewModel.imageCaptureUseCase}"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            app:lifecycleOwner="@{owner}"
+            app:previewUseCase="@{viewModel.cameraPermissionsGranted ? viewModel.previewUseCase : null}" />
 
         <Button
             android:id="@+id/takePhotoButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
+            android:onClick="@{() -> viewModel.requestTakePhotoPermissions()}"
             android:text="@string/take_photo"
-            android:visibility="@{permissionsStatus.granted ? View.VISIBLE : View.GONE}"
+            android:visibility="@{viewModel.cameraPermissionsGranted ? View.VISIBLE : View.GONE}"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
@@ -43,7 +52,7 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:background="#80000000"
-            android:visibility="@{permissionsStatus.denied ? View.VISIBLE : View.GONE}"
+            android:visibility="@{!viewModel.cameraPermissionsGranted ? View.VISIBLE : View.GONE}"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -57,7 +66,7 @@
             android:text="@string/permissions_required"
             android:textColor="@android:color/white"
             android:textSize="24sp"
-            android:visibility="@{permissionsStatus.denied ? View.VISIBLE : View.GONE}"
+            android:visibility="@{!viewModel.cameraPermissionsGranted ? View.VISIBLE : View.GONE}"
             app:layout_constraintBottom_toTopOf="@id/requestPermissionButton"
             app:layout_constraintEnd_toEndOf="@id/permissionOverlayBackground"
             app:layout_constraintStart_toStartOf="@id/permissionOverlayBackground"
@@ -69,9 +78,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
+            android:onClick="@{() -> viewModel.requestCameraPermissions()}"
             android:text="@string/grant_permissions"
             android:textSize="13sp"
-            android:visibility="@{permissionsStatus.denied ? View.VISIBLE : View.GONE}"
+            android:visibility="@{!viewModel.cameraPermissionsGranted ? View.VISIBLE : View.GONE}"
             app:layout_constraintBottom_toBottomOf="@id/permissionOverlayBackground"
             app:layout_constraintEnd_toEndOf="@id/permissionOverlayBackground"
             app:layout_constraintStart_toStartOf="@id/permissionOverlayBackground"
