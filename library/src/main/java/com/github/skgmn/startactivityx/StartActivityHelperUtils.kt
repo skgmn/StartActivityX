@@ -22,13 +22,13 @@ internal object StartActivityHelperUtils {
         val intent = ExplicitIntent(context, StartActivityHelperActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        return context.launchActivity(intent)
+        return context.startActivityForInstance(intent)
     }
 
     suspend fun launchHelperActivity(activity: Activity): StartActivityHelperActivity {
         val intent = ExplicitIntent(activity, StartActivityHelperActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
-        return activity.launchActivity(intent, OverridePendingTransition(0, 0))
+        return activity.startActivityForInstance(intent, OverridePendingTransition(0, 0))
     }
 
     suspend fun launchHelperActivity(fragment: Fragment): StartActivityHelperActivity {
@@ -37,7 +37,7 @@ internal object StartActivityHelperUtils {
             StartActivityHelperActivity::class.java
         )
         intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
-        return fragment.launchActivity(intent, OverridePendingTransition(0, 0))
+        return fragment.startActivityForInstance(intent, OverridePendingTransition(0, 0))
     }
 
     fun allocateRequestCode(keys: Set<Int>): Int {
