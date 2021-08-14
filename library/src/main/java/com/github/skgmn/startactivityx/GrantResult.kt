@@ -1,6 +1,6 @@
 package com.github.skgmn.startactivityx
 
-enum class AcquirePermissionsResult {
+enum class GrantResult {
     ALREADY_GRANTED,
     JUST_GRANTED,
     DENIED;

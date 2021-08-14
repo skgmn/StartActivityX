@@ -1,5 +1,5 @@
 package com.github.skgmn.startactivityx
 
-internal interface RequestPermissionsHelper {
+internal interface PermissionHelper {
     suspend fun requestPermissions(permissions: Collection<String>)
 }

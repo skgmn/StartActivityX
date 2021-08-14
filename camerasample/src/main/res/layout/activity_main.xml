@@ -4,7 +4,7 @@
 
     <data>
 
-        <import type="com.github.skgmn.startactivityx.PermissionStatus" />
+        <import type="com.github.skgmn.startactivityx.PermissionsStatus" />
 
         <import type="android.view.View" />
 

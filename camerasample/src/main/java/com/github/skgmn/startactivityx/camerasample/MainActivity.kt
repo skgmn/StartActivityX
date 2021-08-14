@@ -12,11 +12,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.whenStarted
-import com.github.skgmn.startactivityx.AcquirePermissionsResult
+import com.github.skgmn.startactivityx.GrantResult
 import com.github.skgmn.startactivityx.PermissionRequest
-import com.github.skgmn.startactivityx.acquirePermissions
+import com.github.skgmn.startactivityx.requestPermissions
 import com.github.skgmn.startactivityx.camerasample.databinding.ActivityMainBinding
-import com.github.skgmn.startactivityx.permissionStatus
+import com.github.skgmn.startactivityx.permissionsStatus
 import com.github.skgmn.viewmodelevent.handle
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -35,7 +35,7 @@ class MainActivity : AppCompatActivity() {
         binding.viewModel = viewModel
 
         lifecycleScope.launch {
-            acquirePermissions(Manifest.permission.CAMERA)
+            requestPermissions(Manifest.permission.CAMERA)
             init()
         }
     }
@@ -44,7 +44,7 @@ class MainActivity : AppCompatActivity() {
         handleEvents()
 
         lifecycleScope.launch {
-            permissionStatus(Manifest.permission.CAMERA).collect {
+            permissionsStatus(Manifest.permission.CAMERA).collect {
                 viewModel.cameraPermissionsGranted.value = it.granted
             }
         }
@@ -54,17 +54,17 @@ class MainActivity : AppCompatActivity() {
         handle(requestCameraPermissionsByUserEvent) {
             lifecycleScope.launch {
                 val permissionRequest = PermissionRequest(listOf(Manifest.permission.CAMERA), true)
-                acquirePermissions(permissionRequest)
+                requestPermissions(permissionRequest)
             }
         }
         handle(requestTakePhotoPermissionsEvent) {
             lifecycleScope.launch {
                 val permissionRequest =
                     PermissionRequest(listOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), true)
-                val permissionResult = acquirePermissions(permissionRequest)
+                val permissionResult = requestPermissions(permissionRequest)
                 if (permissionResult.granted) {
                     if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P &&
-                        permissionResult == AcquirePermissionsResult.JUST_GRANTED
+                        permissionResult == GrantResult.JUST_GRANTED
                     ) {
                         viewModel.replaceImageCapture()
                         binding.executePendingBindings()

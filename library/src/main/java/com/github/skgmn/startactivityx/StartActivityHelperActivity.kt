@@ -10,8 +10,7 @@ import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-internal class StartActivityHelperActivity : Activity(), RequestPermissionsHelper {
-
+internal class StartActivityHelperActivity : Activity(), PermissionHelper {
     private val permissionRequests = mutableMapOf<Int, Continuation<Unit>>()
     private val activityLaunches = mutableMapOf<Int, Continuation<ActivityResult>>()
 

@@ -15,7 +15,7 @@ import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-internal class StartActivityHelperFragment : Fragment(), RequestPermissionsHelper {
+internal class StartActivityHelperFragment : Fragment(), PermissionHelper {
     private val permissionRequests = mutableMapOf<Int, Continuation<Unit>>()
     private val activityLaunches = mutableMapOf<Int, Continuation<ActivityResult>>()
 
