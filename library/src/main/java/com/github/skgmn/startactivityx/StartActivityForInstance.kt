@@ -60,7 +60,7 @@ private suspend fun <T : Activity> startActivityForInstance(
 ): T = withContext(Dispatchers.Main.immediate) {
     suspendCancellableCoroutine { cont ->
         val randomKey = UUID.randomUUID().toString()
-        val randomValue = Random.nextLong()
+        val randomValue = generateSequence { Random.nextLong() }.filter { it != 0L }.first()
 
         val actualIntent = Intent(intent)
         actualIntent.putExtra(randomKey, randomValue)
