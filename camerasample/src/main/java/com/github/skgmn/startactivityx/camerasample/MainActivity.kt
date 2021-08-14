@@ -63,6 +63,8 @@ class MainActivity : AppCompatActivity() {
                     PermissionRequest(listOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), true)
                 val permissionResult = requestPermissions(permissionRequest)
                 if (permissionResult.granted) {
+                    // ImageCapture seems not work well right after a permission is granted.
+                    // In this case recreate and rebind ImageCapture to workaround this issue.
                     if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P &&
                         permissionResult == GrantResult.JUST_GRANTED
                     ) {
