@@ -47,13 +47,13 @@ This single method also handles rationale dialog and _do not ask again_ cases so
 
 There are some more features which are not documented yet. Please refer to source code and sample code to know about them.
 
-## permissionsStatus
+## PermissionStatus
 
-Sometimes there needs to show or hide views according to whether permissions are granted or not. `permissionsStatus()` has been introduced to manage this case. It returns `Flow<Boolean>` which infinitely emits boolean values that indicate whether required permissions are granted.
+Sometimes there needs to show or hide views according to whether permissions are granted or not. `listenPermissionStatus()` has been introduced to manage this case. It returns `Flow<Boolean>` which infinitely emits boolean values that indicate whether required permissions are granted.
 ```kotlin
 lifecycleScope.launch {
-    permissonsStatus(Manifest.permission.CAMERA).collect {
-        binding.permissionsGranted = it
+    listenPermissonStatus(Manifest.permission.CAMERA).collect {
+        binding.permissionsGranted = it.granted
     }
 }
 ```
@@ -62,6 +62,8 @@ lifecycleScope.launch {
     android:text="Grant permissions"
     android:visibility="@{permissionsGranted ? View.GONE : View.VISIBLE}" />
 ```
+
+Or `getPermissionStatus()` can be used to get `PermissionStatus` just once.
 
 ## startActivityForInstance
 
