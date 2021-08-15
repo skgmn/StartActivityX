@@ -6,7 +6,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -43,7 +42,7 @@ class MainActivity : AppCompatActivity() {
         handleEvents()
 
         lifecycleScope.launch {
-            listenPermissionsStatus(Manifest.permission.CAMERA).collect {
+            listenPermissionStatus(Manifest.permission.CAMERA).collect {
                 viewModel.cameraPermissionsGranted.value = it.granted
             }
         }

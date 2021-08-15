@@ -8,41 +8,29 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 
-enum class PermissionsStatus {
-    GRANTED,
-    DENIED,
-    DO_NOT_ASK_AGAIN;
-
-    val granted: Boolean
-        get() = this === GRANTED
-
-    val denied: Boolean
-        get() = this === DENIED || this === DO_NOT_ASK_AGAIN
-}
-
 internal val globalPermissionResultSignal = MutableSharedFlow<Any>(
         extraBufferCapacity = 1,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
 )
 
-fun FragmentActivity.listenPermissionsStatus(vararg permissions: String): Flow<PermissionsStatus> {
-    return listenPermissionsStatus(listOf(*permissions))
+fun FragmentActivity.listenPermissionStatus(vararg permissions: String): Flow<PermissionStatus> {
+    return listenPermissionStatus(listOf(*permissions))
 }
 
-fun FragmentActivity.listenPermissionsStatus(permissions: Collection<String>): Flow<PermissionsStatus> {
-    return listenPermissionsStatus(
+fun FragmentActivity.listenPermissionStatus(permissions: Collection<String>): Flow<PermissionStatus> {
+    return listenPermissionStatus(
             context = this,
             helperFragment = StartActivityHelperUtils.getHelperFragment(supportFragmentManager),
             permissions = permissions
     )
 }
 
-fun Fragment.listenPermissionsStatus(vararg permissions: String): Flow<PermissionsStatus> {
-    return listenPermissionsStatus(listOf(*permissions))
+fun Fragment.listenPermissionStatus(vararg permissions: String): Flow<PermissionStatus> {
+    return listenPermissionStatus(listOf(*permissions))
 }
 
-fun Fragment.listenPermissionsStatus(permissions: Collection<String>): Flow<PermissionsStatus> {
-    return listenPermissionsStatus(
+fun Fragment.listenPermissionStatus(permissions: Collection<String>): Flow<PermissionStatus> {
+    return listenPermissionStatus(
             context = requireContext(),
             helperFragment = StartActivityHelperUtils.getHelperFragment(childFragmentManager),
             permissions = permissions
@@ -50,11 +38,11 @@ fun Fragment.listenPermissionsStatus(permissions: Collection<String>): Flow<Perm
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
-private fun listenPermissionsStatus(
+private fun listenPermissionStatus(
         context: Context,
         helperFragment: StartActivityHelperFragment,
         permissions: Collection<String>
-): Flow<PermissionsStatus> {
+): Flow<PermissionStatus> {
     return helperFragment.isStarted()
             .flatMapLatest { started ->
                 if (started) {
@@ -71,6 +59,6 @@ private fun listenPermissionsStatus(
                     emptyFlow()
                 }
             }
-            .map { getPermissionsStatus(context, permissions) }
+            .map { getPermissionStatus(context, permissions) }
             .distinctUntilChanged()
 }
