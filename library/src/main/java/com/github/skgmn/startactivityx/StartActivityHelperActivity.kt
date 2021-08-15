@@ -48,7 +48,7 @@ internal class StartActivityHelperActivity : Activity(), PermissionHelper {
     @Suppress("DEPRECATION")
     suspend fun startActivityForResult(intent: Intent): ActivityResult {
         return withContext(Dispatchers.Main.immediate) {
-            suspendCoroutine<ActivityResult> { cont ->
+            suspendCoroutine { cont ->
                 val requestCode =
                     StartActivityHelperUtils.allocateRequestCode(activityLaunches.keys)
                 activityLaunches[requestCode] = cont
