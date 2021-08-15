@@ -19,7 +19,7 @@ internal class StartActivityHelperActivity : Activity(), PermissionHelper {
     override fun onDestroy() {
         permissionRequests.values.forEach { it.resumeWithException(CancellationException()) }
         permissionRequests.clear()
-        activityLaunches.values.forEach {  it.resumeWithException(CancellationException()) }
+        activityLaunches.values.forEach { it.resumeWithException(CancellationException()) }
         activityLaunches.clear()
         super.onDestroy()
     }
@@ -46,22 +46,25 @@ internal class StartActivityHelperActivity : Activity(), PermissionHelper {
     // registerForActivityResult is rather more difficult to match sender and receiver,
     // so keep using deprecated startActivityForResult
     @Suppress("DEPRECATION")
-    suspend fun startActivityForResult(intent: Intent) =
-        withContext(Dispatchers.Main.immediate) {
-            val requestCode = StartActivityHelperUtils.allocateRequestCode(activityLaunches.keys)
+    suspend fun startActivityForResult(intent: Intent): ActivityResult {
+        return withContext(Dispatchers.Main.immediate) {
             suspendCoroutine<ActivityResult> { cont ->
+                val requestCode =
+                    StartActivityHelperUtils.allocateRequestCode(activityLaunches.keys)
                 activityLaunches[requestCode] = cont
                 startActivityForResult(intent, requestCode)
             }
         }
+    }
 
     // registerForActivityResult is rather more difficult to match sender and receiver,
     // so keep using deprecated requestPermissions
     @Suppress("DEPRECATION")
     override suspend fun requestPermissions(permissions: Collection<String>) {
         withContext(Dispatchers.Main.immediate) {
-            val requestCode = StartActivityHelperUtils.allocateRequestCode(permissionRequests.keys)
             suspendCoroutine<Unit> { cont ->
+                val requestCode =
+                    StartActivityHelperUtils.allocateRequestCode(permissionRequests.keys)
                 permissionRequests[requestCode] = cont
                 ActivityCompat.requestPermissions(
                     this@StartActivityHelperActivity,

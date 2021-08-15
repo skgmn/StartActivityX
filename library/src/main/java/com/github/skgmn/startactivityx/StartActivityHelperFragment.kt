@@ -20,7 +20,7 @@ internal class StartActivityHelperFragment : Fragment(), PermissionHelper {
     override fun onDestroy() {
         permissionRequests.values.forEach { it.resumeWithException(CancellationException()) }
         permissionRequests.clear()
-        activityLaunches.values.forEach {  it.resumeWithException(CancellationException()) }
+        activityLaunches.values.forEach { it.resumeWithException(CancellationException()) }
         activityLaunches.clear()
         super.onDestroy()
     }
@@ -70,35 +70,14 @@ internal class StartActivityHelperFragment : Fragment(), PermissionHelper {
             .flowOn(Dispatchers.Main.immediate)
     }
 
-    private suspend fun ensureCreated() {
-        return suspendCancellableCoroutine { cont ->
-            if (lifecycle.currentState.isAtLeast(Lifecycle.State.CREATED)) {
-                cont.resume(Unit)
-                return@suspendCancellableCoroutine
-            }
-
-            val observer = object : LifecycleObserver {
-                @OnLifecycleEvent(Lifecycle.Event.ON_CREATE)
-                fun onCreate() {
-                    lifecycle.removeObserver(this)
-                    cont.resume(Unit)
-                }
-            }
-            lifecycle.addObserver(observer)
-            cont.invokeOnCancellation {
-                lifecycle.removeObserver(observer)
-            }
-        }
-    }
-
     // registerForActivityResult is rather more difficult to match sender and receiver,
     // so keep using deprecated startActivityForResult
     @Suppress("DEPRECATION")
     suspend fun startActivityForResult(intent: Intent): ActivityResult {
-        return withContext(Dispatchers.Main.immediate) {
-            ensureCreated()
-            val requestCode = StartActivityHelperUtils.allocateRequestCode(activityLaunches.keys)
+        return whenCreated {
             suspendCoroutine { cont ->
+                val requestCode =
+                    StartActivityHelperUtils.allocateRequestCode(activityLaunches.keys)
                 activityLaunches[requestCode] = cont
                 startActivityForResult(intent, requestCode)
             }
@@ -109,10 +88,10 @@ internal class StartActivityHelperFragment : Fragment(), PermissionHelper {
     // so keep using deprecated requestPermissions
     @Suppress("DEPRECATION")
     override suspend fun requestPermissions(permissions: Collection<String>) {
-        withContext(Dispatchers.Main.immediate) {
-            ensureCreated()
-            val requestCode = StartActivityHelperUtils.allocateRequestCode(permissionRequests.keys)
+        whenCreated {
             suspendCoroutine<Unit> { cont ->
+                val requestCode =
+                    StartActivityHelperUtils.allocateRequestCode(permissionRequests.keys)
                 permissionRequests[requestCode] = cont
                 requestPermissions(permissions.toTypedArray(), requestCode)
             }
