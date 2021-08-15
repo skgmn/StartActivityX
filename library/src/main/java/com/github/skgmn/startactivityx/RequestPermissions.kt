@@ -99,13 +99,13 @@ private suspend fun requestPermissions(
     val permissionsShouldShowRationale = request.permissions.asSequence()
             .filter { ActivityCompat.shouldShowRequestPermissionRationale(activity, it) }
             .toCollection(LinkedHashSet())
-    val doNotAskAgainPermissions = storage.removeDoNotAskAgainPermissions(
+    val permissionsShouldNotAskAgain = storage.removeDoNotAskAgainPermissions(
             permissionsShouldShowRationale
     )
 
-    if (request.userIntended && doNotAskAgainPermissions.isNotEmpty()) {
-        val permissions = permissionsShouldShowRationale + doNotAskAgainPermissions
-        if (request.goToSettingsDialog(activity, permissions)) {
+    if (permissionsShouldNotAskAgain.isNotEmpty()) {
+        val permissions = permissionsShouldShowRationale + permissionsShouldNotAskAgain
+        if (request.userIntended && request.goToSettingsDialog(activity, permissions)) {
             val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
             val uri = Uri.fromParts("package", activity.packageName, null)
             intent.data = uri
@@ -115,13 +115,11 @@ private suspend fun requestPermissions(
                 InternalUtils.checkSelfPermission(activity, it) ==
                         PermissionChecker.PERMISSION_GRANTED
             }
-            return@withContext if (allGranted) {
-                GrantResult.JUST_GRANTED
-            } else {
-                GrantResult.DENIED
+            if (allGranted) {
+                return@withContext GrantResult.JUST_GRANTED
             }
         }
-        return@withContext GrantResult.DENIED
+        return@withContext GrantResult.DO_NOT_ASK_AGAIN
     }
 
     if (!request.userIntended &&
@@ -144,13 +142,18 @@ private suspend fun requestPermissions(
     }
 
     val pm = activity.packageManager
-    storage.addDoNotAskAgainPermissions(request.permissions.filter {
+    val permissionsDoNotAskAgain = request.permissions.filter {
         permissionMap[it] == false &&
                 !ActivityCompat.shouldShowRequestPermissionRationale(activity, it) &&
                 isDeniable(pm, it)
-    })
+    }
+    storage.addDoNotAskAgainPermissions(permissionsDoNotAskAgain)
 
-    return@withContext GrantResult.DENIED
+    return@withContext if (permissionsDoNotAskAgain.isEmpty()) {
+        GrantResult.DENIED
+    } else {
+        GrantResult.DO_NOT_ASK_AGAIN
+    }
 }
 
 private fun isDeniable(pm: PackageManager, permission: String): Boolean {
