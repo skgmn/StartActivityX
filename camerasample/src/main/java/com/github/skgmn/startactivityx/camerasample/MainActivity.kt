@@ -6,17 +6,15 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.whenStarted
-import com.github.skgmn.startactivityx.GrantResult
-import com.github.skgmn.startactivityx.PermissionRequest
-import com.github.skgmn.startactivityx.requestPermissions
+import com.github.skgmn.startactivityx.*
 import com.github.skgmn.startactivityx.camerasample.databinding.ActivityMainBinding
-import com.github.skgmn.startactivityx.permissionsStatus
 import com.github.skgmn.viewmodelevent.handle
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -45,7 +43,7 @@ class MainActivity : AppCompatActivity() {
         handleEvents()
 
         lifecycleScope.launch {
-            permissionsStatus(Manifest.permission.CAMERA).collect {
+            listenPermissionsStatus(Manifest.permission.CAMERA).collect {
                 viewModel.cameraPermissionsGranted.value = it.granted
             }
         }

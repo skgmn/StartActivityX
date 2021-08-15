@@ -1,7 +1,6 @@
 package com.github.skgmn.startactivityx
 
 import android.content.Context
-import androidx.core.content.PermissionChecker
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
@@ -26,24 +25,24 @@ internal val globalPermissionResultSignal = MutableSharedFlow<Any>(
         onBufferOverflow = BufferOverflow.DROP_OLDEST
 )
 
-fun FragmentActivity.permissionsStatus(vararg permissions: String): Flow<PermissionsStatus> {
-    return permissionsStatus(listOf(*permissions))
+fun FragmentActivity.listenPermissionsStatus(vararg permissions: String): Flow<PermissionsStatus> {
+    return listenPermissionsStatus(listOf(*permissions))
 }
 
-fun FragmentActivity.permissionsStatus(permissions: Collection<String>): Flow<PermissionsStatus> {
-    return permissionsStatus(
+fun FragmentActivity.listenPermissionsStatus(permissions: Collection<String>): Flow<PermissionsStatus> {
+    return listenPermissionsStatus(
             context = this,
             helperFragment = StartActivityHelperUtils.getHelperFragment(supportFragmentManager),
             permissions = permissions
     )
 }
 
-fun Fragment.permissionsStatus(vararg permissions: String): Flow<PermissionsStatus> {
-    return permissionsStatus(listOf(*permissions))
+fun Fragment.listenPermissionsStatus(vararg permissions: String): Flow<PermissionsStatus> {
+    return listenPermissionsStatus(listOf(*permissions))
 }
 
-fun Fragment.permissionsStatus(permissions: Collection<String>): Flow<PermissionsStatus> {
-    return permissionsStatus(
+fun Fragment.listenPermissionsStatus(permissions: Collection<String>): Flow<PermissionsStatus> {
+    return listenPermissionsStatus(
             context = requireContext(),
             helperFragment = StartActivityHelperUtils.getHelperFragment(childFragmentManager),
             permissions = permissions
@@ -51,7 +50,7 @@ fun Fragment.permissionsStatus(permissions: Collection<String>): Flow<Permission
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
-private fun permissionsStatus(
+private fun listenPermissionsStatus(
         context: Context,
         helperFragment: StartActivityHelperFragment,
         permissions: Collection<String>
@@ -74,30 +73,4 @@ private fun permissionsStatus(
             }
             .map { getPermissionsStatus(context, permissions) }
             .distinctUntilChanged()
-}
-
-private fun getPermissionsStatus(
-        context: Context,
-        permissions: Collection<String>
-): PermissionsStatus {
-    val storage = PermissionStorage.getInstance(context)
-    val doNotAskAgainPermissions = storage.doNotAskAgainPermissions
-    permissions.forEach {
-        val status = when {
-            InternalUtils.checkSelfPermission(context, it) ==
-                    PermissionChecker.PERMISSION_GRANTED -> {
-                PermissionsStatus.GRANTED
-            }
-            it in doNotAskAgainPermissions -> {
-                PermissionsStatus.DO_NOT_ASK_AGAIN
-            }
-            else -> {
-                PermissionsStatus.DENIED
-            }
-        }
-        if (status != PermissionsStatus.GRANTED) {
-            return status
-        }
-    }
-    return PermissionsStatus.GRANTED
 }
