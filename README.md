@@ -43,7 +43,7 @@ lifecycleScope.launch {
 }
 ```
 Simple again.
-This single method also handles rationale dialog and _do not ask again_ cases so there are no other things to do to acquire permissions.
+This single method also handles rationale dialog and _do not ask again_ cases so there are no other things to acquire permissions.
 
 There are some more features which are not documented yet. Please refer to source code and sample code to know about them.
 
