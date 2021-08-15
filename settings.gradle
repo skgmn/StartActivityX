@@ -1,2 +1,3 @@
-rootProject.name = "RapidStartActivity"
-include ':app'
+rootProject.name = "StartActivityX"
+include ':library'
+include ':camerasample'
