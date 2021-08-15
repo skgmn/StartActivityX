@@ -24,6 +24,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val imageCaptureUseCase =
         imageCaptureUseCaseFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), null)
 
+    val permissionsInitiallyRequested = MutableStateFlow(false)
     val cameraPermissionsGranted = MutableStateFlow(false)
 
     val requestCameraPermissionsByUserEvent = publicEvent<Any>()

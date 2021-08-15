@@ -36,6 +36,7 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             requestPermissions(Manifest.permission.CAMERA)
+            viewModel.permissionsInitiallyRequested.value = true
             init()
         }
     }
