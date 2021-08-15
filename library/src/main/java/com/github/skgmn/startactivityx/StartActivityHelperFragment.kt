@@ -4,20 +4,26 @@ import android.content.Intent
 import androidx.activity.result.ActivityResult
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withContext
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 internal class StartActivityHelperFragment : Fragment(), PermissionHelper {
     private val permissionRequests = mutableMapOf<Int, Continuation<Unit>>()
     private val activityLaunches = mutableMapOf<Int, Continuation<ActivityResult>>()
+
+    override fun onDestroy() {
+        permissionRequests.values.forEach { it.resumeWithException(CancellationException()) }
+        permissionRequests.clear()
+        activityLaunches.values.forEach {  it.resumeWithException(CancellationException()) }
+        activityLaunches.clear()
+        super.onDestroy()
+    }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         activityLaunches.remove(requestCode)?.resume(ActivityResult(resultCode, data))

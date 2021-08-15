@@ -4,15 +4,25 @@ import android.app.Activity
 import android.content.Intent
 import androidx.activity.result.ActivityResult
 import androidx.core.app.ActivityCompat
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 internal class StartActivityHelperActivity : Activity(), PermissionHelper {
     private val permissionRequests = mutableMapOf<Int, Continuation<Unit>>()
     private val activityLaunches = mutableMapOf<Int, Continuation<ActivityResult>>()
+
+    override fun onDestroy() {
+        permissionRequests.values.forEach { it.resumeWithException(CancellationException()) }
+        permissionRequests.clear()
+        activityLaunches.values.forEach {  it.resumeWithException(CancellationException()) }
+        activityLaunches.clear()
+        super.onDestroy()
+    }
 
     @Suppress("DEPRECATION")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
