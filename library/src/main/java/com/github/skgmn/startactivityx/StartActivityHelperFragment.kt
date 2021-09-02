@@ -38,38 +38,6 @@ internal class StartActivityHelperFragment : Fragment(), PermissionHelper {
         permissionRequests.remove(requestCode)?.resume(Unit)
     }
 
-    @ExperimentalCoroutinesApi
-    fun isStarted(): Flow<Boolean> {
-        return callbackFlow {
-            send(lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
-            val observer = LifecycleEventObserver { _, _ ->
-                trySend(lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
-            }
-            lifecycle.addObserver(observer)
-            awaitClose {
-                lifecycle.removeObserver(observer)
-            }
-        }
-            .buffer(Channel.Factory.CONFLATED)
-            .flowOn(Dispatchers.Main.immediate)
-            .distinctUntilChanged()
-    }
-
-    @ExperimentalCoroutinesApi
-    fun watchLifecycleEvent(): Flow<Lifecycle.Event> {
-        return callbackFlow {
-            val observer = LifecycleEventObserver { _, event ->
-                trySend(event)
-            }
-            lifecycle.addObserver(observer)
-            awaitClose {
-                lifecycle.removeObserver(observer)
-            }
-        }
-            .buffer(Channel.Factory.UNLIMITED)
-            .flowOn(Dispatchers.Main.immediate)
-    }
-
     // registerForActivityResult is rather more difficult to match sender and receiver,
     // so keep using deprecated startActivityForResult
     @Suppress("DEPRECATION")

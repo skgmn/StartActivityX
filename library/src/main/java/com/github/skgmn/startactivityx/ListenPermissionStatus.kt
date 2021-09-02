@@ -1,27 +1,28 @@
 package com.github.skgmn.startactivityx
 
 import android.content.Context
+import androidx.core.app.ComponentActivity
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 
 internal val globalPermissionResultSignal = MutableSharedFlow<Any>(
-        extraBufferCapacity = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    extraBufferCapacity = 1,
+    onBufferOverflow = BufferOverflow.DROP_OLDEST
 )
 
-fun FragmentActivity.listenPermissionStatus(vararg permissions: String): Flow<PermissionStatus> {
+fun ComponentActivity.listenPermissionStatus(vararg permissions: String): Flow<PermissionStatus> {
     return listenPermissionStatus(listOf(*permissions))
 }
 
-fun FragmentActivity.listenPermissionStatus(permissions: Collection<String>): Flow<PermissionStatus> {
+fun ComponentActivity.listenPermissionStatus(permissions: Collection<String>): Flow<PermissionStatus> {
     return listenPermissionStatus(
-            context = this,
-            helperFragment = StartActivityHelperUtils.getHelperFragment(supportFragmentManager),
-            permissions = permissions
+        context = this,
+        lifecycleOwner = this,
+        permissions = permissions
     )
 }
 
@@ -31,34 +32,34 @@ fun Fragment.listenPermissionStatus(vararg permissions: String): Flow<Permission
 
 fun Fragment.listenPermissionStatus(permissions: Collection<String>): Flow<PermissionStatus> {
     return listenPermissionStatus(
-            context = requireContext(),
-            helperFragment = StartActivityHelperUtils.getHelperFragment(childFragmentManager),
-            permissions = permissions
+        context = requireContext(),
+        lifecycleOwner = this,
+        permissions = permissions
     )
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
 private fun listenPermissionStatus(
-        context: Context,
-        helperFragment: StartActivityHelperFragment,
-        permissions: Collection<String>
+    context: Context,
+    lifecycleOwner: LifecycleOwner,
+    permissions: Collection<String>
 ): Flow<PermissionStatus> {
-    return helperFragment.isStarted()
-            .flatMapLatest { started ->
-                if (started) {
-                    val resumedAfterPaused = helperFragment.watchLifecycleEvent()
-                            .dropWhile { it != Lifecycle.Event.ON_PAUSE }
-                            .filter { it == Lifecycle.Event.ON_RESUME }
-                    merge(
-                            resumedAfterPaused,
-                            globalPermissionResultSignal,
-                            PermissionStorage.getInstance(context).doNotAskAgainPermissionsChange(),
-                            flowOf(Unit)
-                    )
-                } else {
-                    emptyFlow()
-                }
+    return lifecycleOwner.isStarted()
+        .flatMapLatest { started ->
+            if (started) {
+                val resumedAfterPaused = lifecycleOwner.watchLifecycleEvent()
+                    .dropWhile { it != Lifecycle.Event.ON_PAUSE }
+                    .filter { it == Lifecycle.Event.ON_RESUME }
+                merge(
+                    resumedAfterPaused,
+                    globalPermissionResultSignal,
+                    PermissionStorage.getInstance(context).doNotAskAgainPermissionsChange(),
+                    flowOf(Unit)
+                )
+            } else {
+                emptyFlow()
             }
-            .map { getPermissionStatus(context, permissions) }
-            .distinctUntilChanged()
+        }
+        .map { getPermissionStatus(context, permissions) }
+        .distinctUntilChanged()
 }
