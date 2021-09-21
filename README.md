@@ -2,10 +2,9 @@
 
 ```
 dependencies {
-    implementation "com.github.skgmn:startactivityx:1.0.0"
+    implementation "com.github.skgmn:startactivityx:1.2.0"
 }
 ```
-If you don't know how to access to GitHub Packges, please refer to [this](https://gist.github.com/skgmn/79da4a935e904078491e932bd5b327c7).
 
 # Features
 
