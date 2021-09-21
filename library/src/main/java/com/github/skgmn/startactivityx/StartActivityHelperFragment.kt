@@ -4,23 +4,18 @@ import android.content.Intent
 import androidx.activity.result.ActivityResult
 import androidx.core.app.ActivityOptionsCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.*
+import androidx.lifecycle.whenCreated
+import kotlinx.coroutines.CancellationException
+import kotlin.collections.set
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
-internal class StartActivityHelperFragment : Fragment(), PermissionHelper {
-    private val permissionRequests = mutableMapOf<Int, Continuation<Unit>>()
+internal class StartActivityHelperFragment : Fragment() {
     private val activityLaunches = mutableMapOf<Int, Continuation<ActivityResult>>()
 
     override fun onDestroy() {
-        permissionRequests.values.forEach { it.resumeWithException(CancellationException()) }
-        permissionRequests.clear()
         activityLaunches.values.forEach { it.resumeWithException(CancellationException()) }
         activityLaunches.clear()
         super.onDestroy()
@@ -28,15 +23,6 @@ internal class StartActivityHelperFragment : Fragment(), PermissionHelper {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         activityLaunches.remove(requestCode)?.resume(ActivityResult(resultCode, data))
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        globalPermissionResultSignal.tryEmit(Unit)
-        permissionRequests.remove(requestCode)?.resume(Unit)
     }
 
     @Suppress("DEPRECATION")
@@ -50,20 +36,6 @@ internal class StartActivityHelperFragment : Fragment(), PermissionHelper {
                     StartActivityHelperUtils.allocateRequestCode(activityLaunches.keys)
                 activityLaunches[requestCode] = cont
                 startActivityForResult(intent, requestCode, activityOptions?.toBundle())
-            }
-        }
-    }
-
-    // registerForActivityResult is rather more difficult to match sender and receiver,
-    // so keep using deprecated requestPermissions
-    @Suppress("DEPRECATION")
-    override suspend fun requestPermissions(permissions: Collection<String>) {
-        whenCreated {
-            suspendCoroutine<Unit> { cont ->
-                val requestCode =
-                    StartActivityHelperUtils.allocateRequestCode(permissionRequests.keys)
-                permissionRequests[requestCode] = cont
-                requestPermissions(permissions.toTypedArray(), requestCode)
             }
         }
     }
