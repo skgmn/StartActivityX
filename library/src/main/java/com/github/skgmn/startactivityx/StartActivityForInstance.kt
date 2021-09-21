@@ -5,6 +5,7 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import androidx.core.app.ActivityOptionsCompat
 import androidx.fragment.app.Fragment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -13,25 +14,14 @@ import java.util.*
 import kotlin.coroutines.resume
 import kotlin.random.Random
 
-suspend fun <T : Activity> Context.startActivityForInstance(intent: ExplicitIntent<T>): T {
-    return startActivityForInstance(
-        applicationSupplier = ContextApplicationSupplier(this),
-        activityStarter = { startActivity(it) },
-        intent = intent
-    )
-}
-
-suspend fun <T : Activity> Activity.startActivityForInstance(
+suspend fun <T : Activity> Context.startActivityForInstance(
     intent: ExplicitIntent<T>,
-    overridePendingTransition: OverridePendingTransition? = null
+    activityOptions: ActivityOptionsCompat? = null
 ): T {
     return startActivityForInstance(
-        applicationSupplier = ActivityApplicationSupplier(this),
+        applicationSupplier = ContextApplicationSupplier(this),
         activityStarter = { intentToStart ->
-            startActivity(intentToStart)
-            overridePendingTransition?.let {
-                overridePendingTransition(it.enterAnim, it.exitAnim)
-            }
+            startActivity(intentToStart, activityOptions?.toBundle())
         },
         intent = intent
     )
@@ -39,15 +29,12 @@ suspend fun <T : Activity> Activity.startActivityForInstance(
 
 suspend fun <T : Activity> Fragment.startActivityForInstance(
     intent: ExplicitIntent<T>,
-    overridePendingTransition: OverridePendingTransition? = null
+    activityOptions: ActivityOptionsCompat? = null
 ): T {
     return startActivityForInstance(
         applicationSupplier = FragmentApplicationSupplier(this),
         activityStarter = { intentToStart ->
-            startActivity(intentToStart)
-            overridePendingTransition?.let {
-                activity?.overridePendingTransition(it.enterAnim, it.exitAnim)
-            }
+            startActivity(intentToStart, activityOptions?.toBundle())
         },
         intent = intent
     )

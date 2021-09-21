@@ -1,15 +1,18 @@
 package com.github.skgmn.startactivityx
 
+import android.app.Activity
 import android.app.Application
 import android.content.Context
 
-internal class ContextApplicationSupplier(private val context: Context): ApplicationSupplier {
+internal class ContextApplicationSupplier(private val context: Context) : ApplicationSupplier {
     private var app: Application? = null
 
     override fun getApplication(): Application? {
-        return app ?: tryGetApplication()?.also {
-            app = it
-        }
+        return (context as? Activity)?.application
+            ?: app
+            ?: tryGetApplication()?.also {
+                app = it
+            }
     }
 
     private fun tryGetApplication(): Application? {

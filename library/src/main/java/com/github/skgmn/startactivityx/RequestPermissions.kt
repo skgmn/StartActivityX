@@ -2,17 +2,23 @@ package com.github.skgmn.startactivityx
 
 import android.app.Activity
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.content.pm.PermissionInfo
 import android.net.Uri
 import android.provider.Settings
+import androidx.activity.ComponentActivity
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.ActivityResultRegistry
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.PermissionChecker
-import androidx.core.content.pm.PermissionInfoCompat
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.*
+import kotlin.collections.LinkedHashSet
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
+
+private const val KEY_PREFIX = "com.github.skgmn.startactivityx.RequestMultiplePermissions_"
 
 suspend fun Activity.requestPermissions(vararg permissions: String): GrantResult {
     return requestPermissions(listOf(*permissions))
@@ -23,39 +29,37 @@ suspend fun Activity.requestPermissions(permissions: Collection<String>): GrantR
 }
 
 suspend fun Activity.requestPermissions(request: PermissionRequest): GrantResult {
-    return if (this is FragmentActivity) {
+    return if (this is ComponentActivity) {
         requestPermissions(request)
     } else {
         requestPermissions(
             activity = this,
-            permissionHelperSupplier = {
-                StartActivityHelperUtils.launchHelperActivity(this)
+            activityResultRegistrySupplier = {
+                StartActivityHelperUtils.launchHelperActivity(this).activityResultRegistry
             },
             request = request
         )
     }
 }
 
-suspend fun FragmentActivity.requestPermissions(
-        vararg permissions: String
+suspend fun ComponentActivity.requestPermissions(
+    vararg permissions: String
 ): GrantResult {
     return requestPermissions(listOf(*permissions))
 }
 
-suspend fun FragmentActivity.requestPermissions(
-        permissions: Collection<String>
+suspend fun ComponentActivity.requestPermissions(
+    permissions: Collection<String>
 ): GrantResult {
     return requestPermissions(PermissionRequest(permissions))
 }
 
-suspend fun FragmentActivity.requestPermissions(
-        request: PermissionRequest
+suspend fun ComponentActivity.requestPermissions(
+    request: PermissionRequest
 ): GrantResult {
     return requestPermissions(
         activity = this,
-        permissionHelperSupplier = {
-            StartActivityHelperUtils.getHelperFragment(supportFragmentManager)
-        },
+        activityResultRegistrySupplier = { activityResultRegistry },
         request = request
     )
 }
@@ -69,27 +73,44 @@ suspend fun Fragment.requestPermissions(permissions: Collection<String>): GrantR
 }
 
 suspend fun Fragment.requestPermissions(request: PermissionRequest): GrantResult {
+    val activity = requireActivity()
     return requestPermissions(
-        activity = requireActivity(),
-        permissionHelperSupplier = {
-            StartActivityHelperUtils.getHelperFragment(childFragmentManager)
-        },
+        activity = activity,
+        activityResultRegistrySupplier = { activity.activityResultRegistry },
         request = request
     )
 }
 
+private suspend fun ActivityResultRegistry.requestPermissionsImpl(
+    permissions: Collection<String>
+): Map<String, Boolean> {
+    return suspendCoroutine { cont ->
+        @Suppress("JoinDeclarationAndAssignment")
+        lateinit var launcher: ActivityResultLauncher<Array<String>>
+        launcher = register(
+            KEY_PREFIX + UUID.randomUUID().toString(),
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) {
+            launcher.unregister()
+            globalPermissionResultSignal.tryEmit(Unit)
+            cont.resume(it)
+        }
+        launcher.launch(permissions.toTypedArray())
+    }
+}
+
 private suspend fun requestPermissions(
     activity: Activity,
-    permissionHelperSupplier: suspend () -> PermissionHelper,
+    activityResultRegistrySupplier: suspend () -> ActivityResultRegistry,
     request: PermissionRequest
 ): GrantResult = withContext(Dispatchers.Main.immediate) {
     val storage = PermissionStorage.getInstance(activity)
     val permissionsGranted = request.permissions.asSequence()
-            .filter {
-                InternalUtils.checkSelfPermission(activity, it) ==
-                        PermissionChecker.PERMISSION_GRANTED
-            }
-            .toSet()
+        .filter {
+            PermissionHelper.checkSelfPermission(activity, it) ==
+                    PermissionChecker.PERMISSION_GRANTED
+        }
+        .toSet()
     storage.removeDoNotAskAgainPermissions(permissionsGranted)
 
     if (request.permissions.all { it in permissionsGranted }) {
@@ -97,10 +118,10 @@ private suspend fun requestPermissions(
     }
 
     val permissionsShouldShowRationale = request.permissions.asSequence()
-            .filter { ActivityCompat.shouldShowRequestPermissionRationale(activity, it) }
-            .toCollection(LinkedHashSet())
+        .filter { ActivityCompat.shouldShowRequestPermissionRationale(activity, it) }
+        .toCollection(LinkedHashSet())
     val permissionsShouldNotAskAgain = storage.removeDoNotAskAgainPermissions(
-            permissionsShouldShowRationale
+        permissionsShouldShowRationale
     )
 
     if (permissionsShouldNotAskAgain.isNotEmpty()) {
@@ -112,7 +133,7 @@ private suspend fun requestPermissions(
             activity.startActivityForResult(intent)
 
             val allGranted = permissions.all {
-                InternalUtils.checkSelfPermission(activity, it) ==
+                PermissionHelper.checkSelfPermission(activity, it) ==
                         PermissionChecker.PERMISSION_GRANTED
             }
             if (allGranted) {
@@ -123,20 +144,26 @@ private suspend fun requestPermissions(
     }
 
     if (!request.userIntended &&
-            permissionsShouldShowRationale.isNotEmpty() &&
-            !request.rationaleDialog(activity, permissionsShouldShowRationale)) {
-
+        permissionsShouldShowRationale.isNotEmpty() &&
+        !request.rationaleDialog(activity, permissionsShouldShowRationale)
+    ) {
         return@withContext GrantResult.DENIED
     }
 
-    permissionHelperSupplier().requestPermissions(request.permissions)
-    val permissionMap = request.permissions.associateBy(
-            keySelector = { it },
-            valueTransform = {
-                InternalUtils.checkSelfPermission(activity, it) ==
-                        PermissionChecker.PERMISSION_GRANTED
+    val permissionMapCandidate =
+        activityResultRegistrySupplier().requestPermissionsImpl(request.permissions)
+    val permissionMap =
+        if (permissionMapCandidate.any { PermissionHelper.regardGrantedImplicitly(it.key) }) {
+            permissionMapCandidate.mapValues { (key, value) ->
+                if (PermissionHelper.regardGrantedImplicitly(key)) {
+                    true
+                } else {
+                    value
+                }
             }
-    )
+        } else {
+            permissionMapCandidate
+        }
     if (permissionMap.all { it.value }) {
         return@withContext GrantResult.JUST_GRANTED
     }
@@ -145,7 +172,7 @@ private suspend fun requestPermissions(
     val permissionsDoNotAskAgain = request.permissions.filter {
         permissionMap[it] == false &&
                 !ActivityCompat.shouldShowRequestPermissionRationale(activity, it) &&
-                isDeniable(pm, it)
+                PermissionHelper.isDeniable(pm, it)
     }
     storage.addDoNotAskAgainPermissions(permissionsDoNotAskAgain)
 
@@ -153,14 +180,5 @@ private suspend fun requestPermissions(
         GrantResult.DENIED
     } else {
         GrantResult.DO_NOT_ASK_AGAIN
-    }
-}
-
-private fun isDeniable(pm: PackageManager, permission: String): Boolean {
-    return try {
-        PermissionInfoCompat.getProtection(pm.getPermissionInfo(permission, 0)) !=
-                PermissionInfo.PROTECTION_NORMAL
-    } catch (e: PackageManager.NameNotFoundException) {
-        false
     }
 }

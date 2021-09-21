@@ -29,7 +29,7 @@ internal fun getPermissionStatus(
     val doNotAskAgainPermissions = storage.doNotAskAgainPermissions
     permissions.forEach {
         val status = when {
-            InternalUtils.checkSelfPermission(context, it) ==
+            PermissionHelper.checkSelfPermission(context, it) ==
                     PermissionChecker.PERMISSION_GRANTED -> {
                 PermissionStatus.GRANTED
             }
