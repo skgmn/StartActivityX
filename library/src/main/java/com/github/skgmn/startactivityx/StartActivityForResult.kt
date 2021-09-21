@@ -59,17 +59,14 @@ suspend fun Fragment.startActivityForResult(
     activityOptions: ActivityOptionsCompat? = null
 ): ActivityResult {
     return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-        (activity as? ActivityResultRegistryOwner)
-            ?.activityResultRegistry
-            ?.startActivityForResult(intent, activityOptions)
-            ?: StartActivityHelperUtils.getHelperFragment(childFragmentManager)
-                .startActivityForResultImpl(intent, activityOptions)
+        val registryOwner = requireHost() as? ActivityResultRegistryOwner ?: requireActivity()
+        registryOwner.activityResultRegistry.startActivityForResult(intent, activityOptions)
     } else {
         // Before Lollipop, startActivityForResult fails when it is called from the activity
         // of which launch mode is either singleTask or singleInstance.
         // So use dummy, invisible activity to avoid the problem.
         StartActivityHelperUtils.launchHelperActivity(this)
-            .startActivityForResult(intent)
+            .startActivityForResult(intent, activityOptions)
     }
 }
 
