@@ -63,7 +63,7 @@ suspend fun Fragment.startActivityForResult(
             ?.activityResultRegistry
             ?.startActivityForResult(intent, activityOptions)
             ?: StartActivityHelperUtils.getHelperFragment(childFragmentManager)
-                .startActivityForResult(intent)
+                .startActivityForResultImpl(intent, activityOptions)
     } else {
         // Before Lollipop, startActivityForResult fails when it is called from the activity
         // of which launch mode is either singleTask or singleInstance.

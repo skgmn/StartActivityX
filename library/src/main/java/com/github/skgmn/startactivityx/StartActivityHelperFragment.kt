@@ -2,6 +2,7 @@ package com.github.skgmn.startactivityx
 
 import android.content.Intent
 import androidx.activity.result.ActivityResult
+import androidx.core.app.ActivityOptionsCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.*
 import kotlinx.coroutines.*
@@ -38,16 +39,17 @@ internal class StartActivityHelperFragment : Fragment(), PermissionHelper {
         permissionRequests.remove(requestCode)?.resume(Unit)
     }
 
-    // registerForActivityResult is rather more difficult to match sender and receiver,
-    // so keep using deprecated startActivityForResult
     @Suppress("DEPRECATION")
-    suspend fun startActivityForResult(intent: Intent): ActivityResult {
+    suspend fun startActivityForResultImpl(
+        intent: Intent,
+        activityOptions: ActivityOptionsCompat? = null
+    ): ActivityResult {
         return whenCreated {
             suspendCoroutine { cont ->
                 val requestCode =
                     StartActivityHelperUtils.allocateRequestCode(activityLaunches.keys)
                 activityLaunches[requestCode] = cont
-                startActivityForResult(intent, requestCode)
+                startActivityForResult(intent, requestCode, activityOptions?.toBundle())
             }
         }
     }
