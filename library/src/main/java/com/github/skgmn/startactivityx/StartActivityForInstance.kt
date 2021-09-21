@@ -1,6 +1,7 @@
 package com.github.skgmn.startactivityx
 
 import android.app.Activity
+import android.app.ActivityOptions
 import android.app.Application
 import android.content.Context
 import android.content.Intent
@@ -23,15 +24,12 @@ suspend fun <T : Activity> Context.startActivityForInstance(intent: ExplicitInte
 
 suspend fun <T : Activity> Activity.startActivityForInstance(
     intent: ExplicitIntent<T>,
-    overridePendingTransition: OverridePendingTransition? = null
+    activityOptions: ActivityOptions? = null
 ): T {
     return startActivityForInstance(
         applicationSupplier = ActivityApplicationSupplier(this),
         activityStarter = { intentToStart ->
-            startActivity(intentToStart)
-            overridePendingTransition?.let {
-                overridePendingTransition(it.enterAnim, it.exitAnim)
-            }
+            startActivity(intentToStart, activityOptions?.toBundle())
         },
         intent = intent
     )
@@ -39,15 +37,12 @@ suspend fun <T : Activity> Activity.startActivityForInstance(
 
 suspend fun <T : Activity> Fragment.startActivityForInstance(
     intent: ExplicitIntent<T>,
-    overridePendingTransition: OverridePendingTransition? = null
+    activityOptions: ActivityOptions? = null
 ): T {
     return startActivityForInstance(
         applicationSupplier = FragmentApplicationSupplier(this),
         activityStarter = { intentToStart ->
-            startActivity(intentToStart)
-            overridePendingTransition?.let {
-                activity?.overridePendingTransition(it.enterAnim, it.exitAnim)
-            }
+            startActivity(intentToStart, activityOptions?.toBundle())
         },
         intent = intent
     )

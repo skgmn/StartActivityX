@@ -1,6 +1,7 @@
 package com.github.skgmn.startactivityx
 
 import android.app.Activity
+import android.app.ActivityOptions
 import android.content.Context
 import android.content.Intent
 import androidx.fragment.app.Fragment
@@ -28,16 +29,20 @@ internal object StartActivityHelperUtils {
     suspend fun launchHelperActivity(activity: Activity): StartActivityHelperActivity {
         val intent = ExplicitIntent(activity, StartActivityHelperActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
-        return activity.startActivityForInstance(intent, OverridePendingTransition(0, 0))
+        return activity.startActivityForInstance(
+            intent,
+            ActivityOptions.makeCustomAnimation(activity, 0, 0)
+        )
     }
 
     suspend fun launchHelperActivity(fragment: Fragment): StartActivityHelperActivity {
-        val intent = ExplicitIntent(
-            fragment.requireContext(),
-            StartActivityHelperActivity::class.java
-        )
+        val context = fragment.requireContext()
+        val intent = ExplicitIntent(context, StartActivityHelperActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
-        return fragment.startActivityForInstance(intent, OverridePendingTransition(0, 0))
+        return fragment.startActivityForInstance(
+            intent,
+            ActivityOptions.makeCustomAnimation(context, 0, 0)
+        )
     }
 
     fun allocateRequestCode(keys: Set<Int>): Int {
