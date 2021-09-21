@@ -1,9 +1,9 @@
 package com.github.skgmn.startactivityx
 
 import android.app.Activity
-import android.app.ActivityOptions
 import android.content.Context
 import android.content.Intent
+import androidx.core.app.ActivityOptionsCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import kotlin.random.Random
@@ -31,7 +31,7 @@ internal object StartActivityHelperUtils {
         intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
         return activity.startActivityForInstance(
             intent,
-            ActivityOptions.makeCustomAnimation(activity, 0, 0)
+            ActivityOptionsCompat.makeCustomAnimation(activity, 0, 0)
         )
     }
 
@@ -41,7 +41,7 @@ internal object StartActivityHelperUtils {
         intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
         return fragment.startActivityForInstance(
             intent,
-            ActivityOptions.makeCustomAnimation(context, 0, 0)
+            ActivityOptionsCompat.makeCustomAnimation(context, 0, 0)
         )
     }
 

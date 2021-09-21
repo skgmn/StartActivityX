@@ -1,11 +1,11 @@
 package com.github.skgmn.startactivityx
 
 import android.app.Activity
-import android.app.ActivityOptions
 import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import androidx.core.app.ActivityOptionsCompat
 import androidx.fragment.app.Fragment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -14,20 +14,12 @@ import java.util.*
 import kotlin.coroutines.resume
 import kotlin.random.Random
 
-suspend fun <T : Activity> Context.startActivityForInstance(intent: ExplicitIntent<T>): T {
-    return startActivityForInstance(
-        applicationSupplier = ContextApplicationSupplier(this),
-        activityStarter = { startActivity(it) },
-        intent = intent
-    )
-}
-
-suspend fun <T : Activity> Activity.startActivityForInstance(
+suspend fun <T : Activity> Context.startActivityForInstance(
     intent: ExplicitIntent<T>,
-    activityOptions: ActivityOptions? = null
+    activityOptions: ActivityOptionsCompat? = null
 ): T {
     return startActivityForInstance(
-        applicationSupplier = ActivityApplicationSupplier(this),
+        applicationSupplier = ContextApplicationSupplier(this),
         activityStarter = { intentToStart ->
             startActivity(intentToStart, activityOptions?.toBundle())
         },
@@ -37,7 +29,7 @@ suspend fun <T : Activity> Activity.startActivityForInstance(
 
 suspend fun <T : Activity> Fragment.startActivityForInstance(
     intent: ExplicitIntent<T>,
-    activityOptions: ActivityOptions? = null
+    activityOptions: ActivityOptionsCompat? = null
 ): T {
     return startActivityForInstance(
         applicationSupplier = FragmentApplicationSupplier(this),
