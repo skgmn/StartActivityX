@@ -24,8 +24,8 @@ allprojects {
         maven {
             url "https://maven.pkg.github.com/skgmn/*"
             credentials {
-                username GITHUB_ID
-                password GITHUB_PACKAGES_TOKEN
+                username findProperty("GITHUB_ID") ?: ""
+                password findProperty("GITHUB_PACKAGES_TOKEN") ?: ""
             }
         }
     }
